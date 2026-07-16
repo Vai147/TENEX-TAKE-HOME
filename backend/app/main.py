@@ -57,7 +57,8 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-# Routers are mounted in later phases (auth, uploads).
 from app.api import auth as auth_routes  # noqa: E402
+from app.api import uploads as upload_routes  # noqa: E402
 
 app.include_router(auth_routes.router)
+app.include_router(upload_routes.router)
