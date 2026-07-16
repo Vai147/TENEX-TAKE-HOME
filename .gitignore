@@ -1,6 +1,8 @@
 # Env / secrets
 .env
 *.env.local
+Tenex Engineering Take Home Test.pdf
+plan.md
 
 # Python
 __pycache__/
