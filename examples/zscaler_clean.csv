@@ -1,0 +1,21 @@
+timestamp,user,src_ip,url,action,status,bytes_sent,bytes_recv,user_agent
+2026-07-14T09:01:12Z,alice@corp.com,10.0.4.21,https://mail.google.com/inbox,Allowed,200,1204,88231,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T09:02:03Z,bob@corp.com,10.0.4.22,https://docs.google.com/document/d/1a2b,Allowed,200,980,45120,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T09:03:44Z,alice@corp.com,10.0.4.21,https://slack.com/api/rtm.connect,Allowed,200,640,12044,Slack/4.35.0
+2026-07-14T09:05:19Z,carol@corp.com,10.0.4.23,https://github.com/orgs/corp/repos,Allowed,200,1520,204331,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T09:07:52Z,bob@corp.com,10.0.4.22,https://news.ycombinator.com,Allowed,200,410,33280,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T09:09:31Z,dave@corp.com,10.0.4.24,https://aws.amazon.com/console,Allowed,200,2210,150233,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T09:12:05Z,alice@corp.com,10.0.4.21,https://calendar.google.com,Allowed,200,720,60110,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T09:14:48Z,carol@corp.com,10.0.4.23,https://stackoverflow.com/questions,Allowed,200,880,72019,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T09:18:22Z,eve@corp.com,10.0.4.25,https://zoom.us/j/98123,Allowed,200,1330,99820,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T09:21:10Z,bob@corp.com,10.0.4.22,https://ads.doubleclick.net/track,Blocked,403,220,0,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T09:24:37Z,dave@corp.com,10.0.4.24,https://confluence.corp.com/wiki,Allowed,200,1010,118442,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T09:29:55Z,alice@corp.com,10.0.4.21,https://drive.google.com/drive/my-drive,Allowed,200,1450,201330,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T09:33:41Z,carol@corp.com,10.0.4.23,https://pypi.org/project/requests,Allowed,200,690,45021,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T09:38:09Z,eve@corp.com,10.0.4.25,https://outlook.office365.com,Allowed,200,1120,88310,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T09:44:26Z,bob@corp.com,10.0.4.22,https://facebook.com,Blocked,403,240,0,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T09:51:03Z,dave@corp.com,10.0.4.24,https://grafana.corp.com/dashboards,Allowed,200,1340,132900,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T09:58:47Z,alice@corp.com,10.0.4.21,https://linkedin.com/feed,Allowed,200,910,77420,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T10:04:15Z,carol@corp.com,10.0.4.23,https://registry.npmjs.org/react,Allowed,200,560,39210,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T10:11:38Z,eve@corp.com,10.0.4.25,https://teams.microsoft.com,Allowed,200,1230,101200,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T10:19:52Z,dave@corp.com,10.0.4.24,https://s3.amazonaws.com/corp-backups,Allowed,200,2050,142300,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0

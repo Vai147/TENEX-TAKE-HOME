@@ -1,0 +1,21 @@
+timestamp,user,src_ip,url,action,status,bytes_sent,bytes_recv,user_agent
+2026-07-14T09:00:05Z,alice@corp.com,10.0.4.21,https://mail.google.com/inbox,Allowed,200,1204,88231,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T09:02:41Z,bob@corp.com,10.0.4.22,https://docs.google.com/document/d/1a2b,Allowed,200,980,45120,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T09:05:12Z,carol@corp.com,10.0.4.23,https://github.com/orgs/corp/repos,Allowed,200,1520,204331,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T02:14:01Z,unknown,192.168.9.66,https://login.corp.com/auth,Blocked,401,180,0,curl/8.4.0
+2026-07-14T02:14:03Z,unknown,192.168.9.66,https://login.corp.com/auth,Blocked,401,180,0,curl/8.4.0
+2026-07-14T02:14:04Z,unknown,192.168.9.66,https://login.corp.com/auth,Blocked,401,180,0,curl/8.4.0
+2026-07-14T02:14:05Z,unknown,192.168.9.66,https://login.corp.com/auth,Blocked,401,180,0,curl/8.4.0
+2026-07-14T02:14:06Z,unknown,192.168.9.66,https://login.corp.com/auth,Blocked,401,180,0,curl/8.4.0
+2026-07-14T02:14:07Z,unknown,192.168.9.66,https://login.corp.com/auth,Blocked,401,180,0,curl/8.4.0
+2026-07-14T02:14:08Z,unknown,192.168.9.66,https://login.corp.com/auth,Blocked,401,180,0,curl/8.4.0
+2026-07-14T02:14:09Z,unknown,192.168.9.66,https://login.corp.com/auth,Blocked,401,180,0,curl/8.4.0
+2026-07-14T02:14:10Z,unknown,192.168.9.66,https://login.corp.com/auth,Allowed,200,180,420,curl/8.4.0
+2026-07-14T02:15:22Z,unknown,192.168.9.66,https://internal.corp.com/api/users/export,Allowed,200,210,9820331,sqlmap/1.8
+2026-07-14T02:16:48Z,unknown,192.168.9.66,https://internal.corp.com/api/db/dump,Allowed,200,240,142880422,sqlmap/1.8
+2026-07-14T09:33:41Z,carol@corp.com,10.0.4.23,https://pypi.org/project/requests,Allowed,200,690,45021,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T09:38:09Z,eve@corp.com,10.0.4.25,https://outlook.office365.com,Allowed,200,1120,88310,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T09:44:26Z,bob@corp.com,10.0.4.22,https://malware-c2.ru/beacon,Blocked,403,512,0,Mozilla/5.0 (Windows NT 10.0) Chrome/126.0
+2026-07-14T09:45:01Z,bob@corp.com,10.0.4.22,https://malware-c2.ru/beacon,Blocked,403,512,0,Mozilla/5.0 (Windows NT 10.0) Chrome/126.0
+2026-07-14T09:45:33Z,bob@corp.com,10.0.4.22,https://malware-c2.ru/beacon,Blocked,403,512,0,Mozilla/5.0 (Windows NT 10.0) Chrome/126.0
+2026-07-14T10:19:52Z,dave@corp.com,10.0.4.24,https://s3.amazonaws.com/corp-backups,Allowed,200,2050,142300,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
