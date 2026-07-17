@@ -76,6 +76,13 @@ class AnomalyFinding(Base):
     reason: Mapped[str] = mapped_column(Text)
     source: Mapped[str] = mapped_column(String(16))  # deterministic | llm
 
+    # Claude's annotations. Deliberately additive: `severity` and `reason` above stay
+    # exactly as the deterministic engine computed them, so a finding remains
+    # reproducible and auditable even when the model is wrong, unavailable, or
+    # disagrees. The LLM enriches the record; it never edits or authors it.
+    explanation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    llm_severity: Mapped[str | None] = mapped_column(String(16), nullable=True)
+
     upload: Mapped["Upload"] = relationship(back_populates="findings")
 
 
@@ -87,5 +94,8 @@ class AnalysisSummary(Base):
     flagged_count: Mapped[int] = mapped_column(Integer, default=0)
     timeline_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     top_talkers_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # SOC timeline narrative. Written by Claude when the analysis succeeds, and by
+    # the deterministic fallback when it does not — `Upload.llm_ok` says which.
+    narrative: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     upload: Mapped["Upload"] = relationship(back_populates="summary")

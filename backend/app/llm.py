@@ -1,0 +1,355 @@
+"""The Claude layer: turn deterministic findings into analyst-facing prose.
+
+What the model is and is not allowed to do
+------------------------------------------
+Claude *annotates*; it never *detects*. It receives the findings the deterministic
+engine already produced and writes an explanation and a severity opinion for each.
+It cannot add a finding, and `explain_findings` discards any explanation whose
+index does not map to a real one. A hallucinated security alert is therefore not a
+prompt-engineering problem here — it is unrepresentable, because there is nowhere
+in the output schema to put one.
+
+The safety ladder
+-----------------
+Every rung has a fallback, so a bad model response degrades the report instead of
+failing the upload:
+
+    extract  -> pull the tool-use input out of the response
+    parse    -> it must be a JSON object
+    validate -> Pydantic checks shape and types (`LlmAnalysis`)
+    semantic -> checks Pydantic cannot: indexes in range, no duplicates, prose
+                non-empty and not absurdly long
+    repair   -> one retry, handing the model its own error
+    fallback -> deterministic narrative, `llm_ok=False`
+
+The whole thing is optional: with no API key configured the fallback runs and the
+app works end-to-end. A reviewer without a key still sees a complete report.
+"""
+from __future__ import annotations
+
+import json
+import logging
+from collections.abc import Sequence
+from typing import Any
+
+from anthropic import Anthropic, APIError
+from pydantic import BaseModel, Field, ValidationError
+
+from app.aggregates import Aggregates
+from app.config import get_settings
+from app.detectors.base import EntryLike, Finding
+
+logger = logging.getLogger(__name__)
+settings = get_settings()
+
+MAX_TOKENS = 2048
+# One retry only. If the model cannot produce valid output twice, more attempts
+# mostly buy latency on an upload a human is waiting for.
+MAX_REPAIR_ATTEMPTS = 1
+
+MIN_NARRATIVE_LENGTH = 20
+MAX_NARRATIVE_LENGTH = 4_000
+MAX_EXPLANATION_LENGTH = 600
+
+SEVERITIES = ("low", "medium", "high", "critical")
+
+ANALYSIS_TOOL = {
+    "name": "record_analysis",
+    "description": (
+        "Record the SOC analysis of a proxy log file: a timeline narrative and one "
+        "explanation per anomaly finding."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "narrative": {
+                "type": "string",
+                "description": (
+                    "A SOC analyst's timeline of what happened in this log file, in "
+                    "plain prose. Reference concrete times, IPs and counts from the "
+                    "data. State what the evidence shows, not what it might mean."
+                ),
+            },
+            "explanations": {
+                "type": "array",
+                "description": "One entry per finding you were given. Do not invent findings.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "finding_index": {
+                            "type": "integer",
+                            "description": "The index of the finding, exactly as given.",
+                        },
+                        "explanation": {
+                            "type": "string",
+                            "description": (
+                                "Why this matters to an analyst, and what to check next. "
+                                "Two or three sentences."
+                            ),
+                        },
+                        "severity": {
+                            "type": "string",
+                            "enum": list(SEVERITIES),
+                            "description": "Your severity assessment for this finding.",
+                        },
+                    },
+                    "required": ["finding_index", "explanation", "severity"],
+                },
+            },
+        },
+        "required": ["narrative", "explanations"],
+    },
+}
+
+SYSTEM_PROMPT = """You are a SOC analyst reviewing a ZScaler web proxy log.
+
+A deterministic rules engine has already decided which entries are anomalous. Your \
+job is to explain its findings to a human analyst — not to find new ones.
+
+Rules:
+- Only explain the findings you are given, identified by their index. Never invent \
+findings, IPs, timestamps, or counts.
+- Attribute a finding only to the src_ip in its own anchor_entry. Never infer who a \
+finding is about from its prose, and never carry an IP over from another finding.
+- Every time, IP, URL and number you write must appear verbatim in the data given to \
+you. Do not interpolate a range end, round a total, or estimate a value that is not \
+there — if you want to state a time window, use timestamps you can actually see.
+- Ground every claim in the data provided. If the data does not support a \
+conclusion, say what is uncertain instead of guessing.
+- The rules engine's confidence scores reflect statistical strength, not business \
+impact. Your severity may differ from its severity — say so plainly when it does.
+- Be concise and concrete. An analyst is triaging, not reading an essay.
+- Always call the record_analysis tool. Never reply with plain text."""
+
+
+class LlmAnomalyExplanation(BaseModel):
+    finding_index: int = Field(ge=0)
+    explanation: str
+    severity: str
+
+
+class LlmAnalysis(BaseModel):
+    """The validated contract for a Claude response."""
+
+    narrative: str
+    explanations: list[LlmAnomalyExplanation]
+
+
+class LlmUnavailable(Exception):
+    """Raised when the ladder is exhausted and the caller must fall back."""
+
+
+def _finding_payload(
+    findings: Sequence[Finding], entries: Sequence[EntryLike]
+) -> list[dict[str, Any]]:
+    """The findings as the model sees them: index is the only handle it gets.
+
+    Each finding carries the facts of the entry it is anchored to. Without this the
+    model has to infer *who* a finding is about from prose that may not name them —
+    `byte_volume`'s evidence quotes a byte count and nothing else — and it will
+    guess, confidently and wrongly. Give it the attribution rather than hope.
+    """
+    by_id = {e.id: e for e in entries if e.id is not None}
+    payload = []
+
+    for index, f in enumerate(findings):
+        item: dict[str, Any] = {
+            "finding_index": index,
+            "type": f.type,
+            "detector_confidence": round(f.confidence, 2),
+            "detector_severity": f.severity,
+            "evidence": f.reason,
+        }
+        anchor = by_id.get(f.entry_id) if f.entry_id is not None else None
+        if anchor is not None:
+            item["anchor_entry"] = {
+                "src_ip": anchor.src_ip,
+                "user": anchor.user,
+                "url": anchor.url,
+                "timestamp": anchor.ts.isoformat() if anchor.ts else None,
+                "action": anchor.action,
+                "bytes_recv": anchor.bytes_recv,
+                "bytes_sent": anchor.bytes_sent,
+            }
+        payload.append(item)
+
+    return payload
+
+
+def _build_prompt(
+    aggregates: Aggregates, findings: Sequence[Finding], entries: Sequence[EntryLike]
+) -> str:
+    payload = {
+        "file_statistics": {
+            "total_requests": aggregates.total_entries,
+            "blocked_requests": aggregates.blocked_entries,
+            "unique_source_ips": aggregates.unique_ips,
+            "unique_users": aggregates.unique_users,
+            "first_seen": aggregates.first_seen,
+            "last_seen": aggregates.last_seen,
+        },
+        "requests_per_hour": [
+            {"hour": b.start, "requests": b.requests, "blocked": b.blocked}
+            for b in aggregates.timeline
+        ],
+        "top_source_ips": [
+            {
+                "src_ip": t.src_ip,
+                "requests": t.requests,
+                "blocked": t.blocked,
+                "bytes_received": t.bytes_recv,
+                "bytes_sent": t.bytes_sent,
+            }
+            for t in aggregates.top_talkers
+        ],
+        "findings": _finding_payload(findings, entries),
+    }
+    return (
+        "Analyse this proxy log and record your analysis.\n\n"
+        f"{json.dumps(payload, indent=2)}"
+    )
+
+
+def _extract_tool_input(response: Any) -> dict[str, Any]:
+    """Rung 1-2: find the tool call and confirm it carries a JSON object."""
+    for block in response.content:
+        if getattr(block, "type", None) == "tool_use" and block.name == ANALYSIS_TOOL["name"]:
+            if not isinstance(block.input, dict):
+                raise ValueError("Tool input was not a JSON object")
+            return block.input
+    raise ValueError("Model replied without calling record_analysis")
+
+
+def _semantic_check(analysis: LlmAnalysis, finding_count: int) -> None:
+    """Rung 4: the checks a schema cannot express.
+
+    Pydantic confirms an int is an int; it cannot know that index 47 is a
+    hallucination when only six findings exist.
+    """
+    text = analysis.narrative.strip()
+    if len(text) < MIN_NARRATIVE_LENGTH:
+        raise ValueError("Narrative is empty or too short to be useful")
+    if len(text) > MAX_NARRATIVE_LENGTH:
+        raise ValueError(f"Narrative exceeds {MAX_NARRATIVE_LENGTH} characters")
+
+    seen: set[int] = set()
+    for item in analysis.explanations:
+        if item.finding_index >= finding_count:
+            raise ValueError(
+                f"finding_index {item.finding_index} does not exist "
+                f"(only {finding_count} findings were provided)"
+            )
+        if item.finding_index in seen:
+            raise ValueError(f"finding_index {item.finding_index} explained more than once")
+        seen.add(item.finding_index)
+
+        if item.severity not in SEVERITIES:
+            raise ValueError(f"severity '{item.severity}' is not one of {list(SEVERITIES)}")
+        if not item.explanation.strip():
+            raise ValueError(f"Explanation for finding {item.finding_index} is empty")
+        if len(item.explanation) > MAX_EXPLANATION_LENGTH:
+            raise ValueError(
+                f"Explanation for finding {item.finding_index} exceeds "
+                f"{MAX_EXPLANATION_LENGTH} characters"
+            )
+
+
+def _client() -> Anthropic:
+    return Anthropic(api_key=settings.anthropic_api_key)
+
+
+def analyse(
+    aggregates: Aggregates,
+    findings: Sequence[Finding],
+    entries: Sequence[EntryLike] = (),
+) -> LlmAnalysis:
+    """Climb the ladder once, with one repair attempt. Raises `LlmUnavailable`.
+
+    `entries` supplies the anchor facts each finding is attributed to. The caller is
+    expected to fall back deterministically rather than propagate.
+    """
+    if not settings.anthropic_api_key:
+        raise LlmUnavailable("No ANTHROPIC_API_KEY configured")
+
+    client = _client()
+    messages: list[dict[str, Any]] = [
+        {"role": "user", "content": _build_prompt(aggregates, findings, entries)}
+    ]
+
+    for attempt in range(MAX_REPAIR_ATTEMPTS + 1):
+        try:
+            response = client.messages.create(
+                model=settings.anthropic_model,
+                max_tokens=MAX_TOKENS,
+                system=SYSTEM_PROMPT,
+                tools=[ANALYSIS_TOOL],
+                # The model has one legal move: call the tool. This removes the
+                # "replied with prose instead of structured output" failure mode.
+                tool_choice={"type": "tool", "name": ANALYSIS_TOOL["name"]},
+                messages=messages,
+            )
+        except APIError as exc:
+            # Network, rate limit, auth: no repair prompt fixes these.
+            raise LlmUnavailable(f"Claude API error: {exc}") from exc
+
+        try:
+            raw = _extract_tool_input(response)
+            analysis = LlmAnalysis.model_validate(raw)
+            _semantic_check(analysis, len(findings))
+            return analysis
+        except (ValueError, ValidationError) as exc:
+            if attempt >= MAX_REPAIR_ATTEMPTS:
+                raise LlmUnavailable(f"Invalid analysis after repair: {exc}") from exc
+
+            logger.warning("Claude returned an invalid analysis, repairing: %s", exc)
+            # Hand the model its own output and the specific complaint. Echoing the
+            # assistant turn back matters: without it the retry has no idea what it
+            # said the first time.
+            messages.extend(
+                [
+                    {"role": "assistant", "content": response.content},
+                    {
+                        "role": "user",
+                        "content": (
+                            f"That analysis was rejected: {exc}\n\n"
+                            f"There are exactly {len(findings)} findings, indexed 0 to "
+                            f"{len(findings) - 1}. Call record_analysis again with valid input."
+                        ),
+                    },
+                ]
+            )
+
+    raise LlmUnavailable("Exhausted repair attempts")  # unreachable; belt and braces
+
+
+def fallback_narrative(aggregates: Aggregates, findings: Sequence[Finding]) -> str:
+    """The bottom rung: a report written from the data, with no model involved.
+
+    Deliberately plain. It exists so that "Claude is down" degrades the prose, not
+    the product — every number here is one the deterministic pipeline already knows.
+    """
+    if aggregates.total_entries == 0:
+        return "No log entries were parsed from this file."
+
+    window = "an unknown period"
+    if aggregates.first_seen and aggregates.last_seen:
+        window = f"{aggregates.first_seen} to {aggregates.last_seen}"
+
+    lines = [
+        f"{aggregates.total_entries} requests from {aggregates.unique_ips} source "
+        f"IP(s) spanning {window}. "
+        f"{aggregates.blocked_entries} were blocked by the proxy."
+    ]
+
+    if not findings:
+        lines.append("No anomalies were detected by the rules engine.")
+        return " ".join(lines)
+
+    by_type: dict[str, int] = {}
+    for f in findings:
+        by_type[f.type] = by_type.get(f.type, 0) + 1
+    breakdown = ", ".join(f"{count}x {name}" for name, count in sorted(by_type.items()))
+    lines.append(f"The rules engine raised {len(findings)} finding(s): {breakdown}.")
+    lines.append(f"Highest-ranked: {findings[0].reason}")
+
+    return " ".join(lines)

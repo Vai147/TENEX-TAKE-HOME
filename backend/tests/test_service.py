@@ -6,11 +6,14 @@ summary rows actually persist, and that the summary's counts are true.
 """
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from app.detectors.engine import MAX_FINDINGS
+from app.llm import LlmUnavailable
 from app.models import AnalysisSummary, AnomalyFinding, LogEntry
 from app.service import process_upload
 
@@ -131,3 +134,102 @@ def test_a_detector_blowing_up_does_not_fail_the_upload(db_session, analyst, mon
     assert upload.status == "done"
     # The surviving detectors still did their job.
     assert _findings(db_session, upload.id)
+
+
+# --- the Claude layer, from the pipeline's side --------------------------------
+
+
+def _fake_analysis(explanations):
+    return SimpleNamespace(
+        narrative="Claude's timeline of the incident.", explanations=explanations
+    )
+
+
+def test_a_successful_analysis_annotates_findings_and_sets_llm_ok(
+    db_session, analyst, monkeypatch
+):
+    def fake_analyse(aggregates, findings, entries=()):
+        return _fake_analysis(
+            [
+                SimpleNamespace(finding_index=i, explanation=f"Because {i}.", severity="high")
+                for i in range(len(findings))
+            ]
+        )
+
+    monkeypatch.setattr("app.service.analyse", fake_analyse)
+
+    upload = process_upload(db_session, analyst.id, "a.csv", _example("zscaler_anomalous.csv"))
+    findings = _findings(db_session, upload.id)
+
+    assert upload.llm_ok is True
+    assert _summary(db_session, upload.id).narrative == "Claude's timeline of the incident."
+    assert all(f.explanation is not None for f in findings)
+    assert all(f.llm_severity == "high" for f in findings)
+
+
+def test_claude_annotations_never_overwrite_the_deterministic_verdict(
+    db_session, analyst, monkeypatch
+):
+    """The engine's severity is the auditable one; the model only adds an opinion."""
+
+    def contrarian_analyse(aggregates, findings, entries=()):
+        return _fake_analysis(
+            [
+                SimpleNamespace(finding_index=i, explanation="Harmless.", severity="low")
+                for i in range(len(findings))
+            ]
+        )
+
+    monkeypatch.setattr("app.service.analyse", contrarian_analyse)
+
+    upload = process_upload(db_session, analyst.id, "a.csv", _example("zscaler_anomalous.csv"))
+    findings = _findings(db_session, upload.id)
+    top = max(findings, key=lambda f: f.confidence)
+
+    assert top.severity == "critical", "deterministic severity survives disagreement"
+    assert top.llm_severity == "low", "and the model's dissent is recorded alongside"
+
+
+def test_an_unavailable_llm_falls_back_without_failing_the_upload(
+    db_session, analyst, monkeypatch
+):
+    def unavailable(aggregates, findings, entries=()):
+        raise LlmUnavailable("no key")
+
+    monkeypatch.setattr("app.service.analyse", unavailable)
+
+    upload = process_upload(db_session, analyst.id, "a.csv", _example("zscaler_anomalous.csv"))
+    summary = _summary(db_session, upload.id)
+
+    assert upload.status == "done"
+    assert upload.llm_ok is False
+    assert summary.narrative, "the fallback still writes a real narrative"
+    assert all(f.explanation is None for f in _findings(db_session, upload.id))
+
+
+def test_an_unexpected_llm_crash_still_falls_back(db_session, analyst, monkeypatch):
+    """A bug in our own plumbing must not cost the user their upload."""
+
+    def exploding(aggregates, findings, entries=()):
+        raise TypeError("bug in the llm layer")
+
+    monkeypatch.setattr("app.service.analyse", exploding)
+
+    upload = process_upload(db_session, analyst.id, "a.csv", _example("zscaler_anomalous.csv"))
+
+    assert upload.status == "done"
+    assert upload.llm_ok is False
+    assert _findings(db_session, upload.id), "findings are unaffected by LLM failure"
+
+
+def test_aggregates_are_persisted_for_the_charts(db_session, analyst, monkeypatch):
+    monkeypatch.setattr("app.service.analyse", lambda a, f, e=(): _fake_analysis([]))
+
+    upload = process_upload(db_session, analyst.id, "a.csv", _example("zscaler_anomalous.csv"))
+    summary = _summary(db_session, upload.id)
+
+    timeline = json.loads(summary.timeline_json)
+    talkers = json.loads(summary.top_talkers_json)
+
+    assert sum(b["requests"] for b in timeline) == 20
+    assert talkers[0]["src_ip"] == "192.168.9.66"

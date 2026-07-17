@@ -1,20 +1,24 @@
-"""Analysis orchestration: save file, parse, persist entries, detect, summarize.
+"""Analysis orchestration: save file, parse, persist entries, detect, narrate.
 
-The Claude layer (Phase 5) hooks in here later. Kept separate from the HTTP route
-so the pipeline is testable in isolation.
+Kept separate from the HTTP route so the pipeline is testable in isolation.
 """
 from __future__ import annotations
 
+import logging
 import os
 import uuid
 
 from sqlalchemy.orm import Session
 
+from app.aggregates import build_aggregates, timeline_json, top_talkers_json
 from app.config import get_settings
 from app.detectors import run_detectors, top_findings
+from app.detectors.base import Finding
+from app.llm import LlmUnavailable, analyse, fallback_narrative
 from app.models import AnalysisSummary, AnomalyFinding, LogEntry, Upload
 from app.parser import parse_logs
 
+logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
@@ -66,7 +70,9 @@ def process_upload(
     db.flush()  # assigns row ids, which findings reference
 
     findings = run_detectors(rows)
-    db.add_all(
+    shown = top_findings(findings)
+
+    finding_rows = [
         AnomalyFinding(
             upload_id=upload.id,
             entry_id=f.entry_id,
@@ -77,9 +83,14 @@ def process_upload(
             source=f.source,
         )
         # Only the top slice is stored and shown; the count below stays honest.
-        for f in top_findings(findings)
-    )
+        for f in shown
+    ]
+    db.add_all(finding_rows)
 
+    aggregates = build_aggregates(rows)
+    narrative, llm_ok = _narrate(aggregates, shown, finding_rows, rows)
+
+    upload.llm_ok = llm_ok
     db.add(
         AnalysisSummary(
             upload_id=upload.id,
@@ -87,6 +98,9 @@ def process_upload(
             # Counted over every finding, not the displayed slice, and over distinct
             # entries, since one row can trip several detectors.
             flagged_count=len({f.entry_id for f in findings if f.entry_id is not None}),
+            timeline_json=timeline_json(aggregates),
+            top_talkers_json=top_talkers_json(aggregates),
+            narrative=narrative,
         )
     )
 
@@ -94,3 +108,35 @@ def process_upload(
     db.commit()
     db.refresh(upload)
     return upload
+
+
+def _narrate(
+    aggregates,
+    shown: list[Finding],
+    finding_rows: list[AnomalyFinding],
+    entries: list[LogEntry],
+) -> tuple[str, bool]:
+    """Ask Claude to narrate and annotate. Returns (narrative, llm_ok).
+
+    Never raises: the log entries and findings are already correct and stored by the
+    time we get here, so a model failure must cost prose, not the upload. `llm_ok`
+    tells the UI which kind of narrative it is looking at.
+    """
+    try:
+        analysis = analyse(aggregates, shown, entries)
+    except LlmUnavailable as exc:
+        logger.info("Claude analysis unavailable, using deterministic narrative: %s", exc)
+        return fallback_narrative(aggregates, shown), False
+    except Exception:
+        # A bug in our own LLM plumbing must not fail an otherwise good upload.
+        logger.exception("Unexpected error in the Claude layer; falling back")
+        return fallback_narrative(aggregates, shown), False
+
+    # Indexes are validated against len(shown) before we get here, so this cannot
+    # write outside the list.
+    for item in analysis.explanations:
+        row = finding_rows[item.finding_index]
+        row.explanation = item.explanation
+        row.llm_severity = item.severity
+
+    return analysis.narrative, True

@@ -43,10 +43,54 @@ export interface LogEntryOut {
   user_agent: string | null;
 }
 
+export interface AnomalyFindingOut {
+  id: number;
+  entry_id: number | null;
+  type: string;
+  confidence: number;
+  severity: Severity;
+  reason: string;
+  source: string;
+  // Claude's annotations. Null when the LLM layer fell back; `severity` above is
+  // always the deterministic engine's verdict and is never overwritten.
+  explanation: string | null;
+  llm_severity: Severity | null;
+}
+
+export type Severity = "low" | "medium" | "high" | "critical";
+
+export interface TimelineBucket {
+  start: string;
+  requests: number;
+  blocked: number;
+}
+
+export interface TalkerStat {
+  src_ip: string;
+  requests: number;
+  blocked: number;
+  bytes_recv: number;
+  bytes_sent: number;
+}
+
 export interface UploadDetail {
   upload: UploadOut;
-  summary: { total_entries: number; flagged_count: number };
+  summary: { total_entries: number; flagged_count: number; narrative: string | null };
   entries: LogEntryOut[];
+  findings: AnomalyFindingOut[];
+}
+
+export interface AnomaliesOut {
+  upload_id: number;
+  // False means `narrative` came from the deterministic fallback and every
+  // `explanation` is null. The findings themselves are unaffected either way.
+  llm_ok: boolean;
+  narrative: string | null;
+  flagged_count: number;
+  total_entries: number;
+  findings: AnomalyFindingOut[];
+  timeline: TimelineBucket[];
+  top_talkers: TalkerStat[];
 }
 
 async function authedJson<T>(path: string, init?: RequestInit): Promise<T> {
@@ -74,8 +118,22 @@ export async function uploadFile(file: File): Promise<UploadOut> {
   return authedJson<UploadOut>("/api/uploads", { method: "POST", body: form });
 }
 
-export async function getUpload(id: number): Promise<UploadDetail> {
-  return authedJson<UploadDetail>(`/api/uploads/${id}`);
+export async function getUpload(
+  id: number,
+  { limit, offset }: { limit?: number; offset?: number } = {},
+): Promise<UploadDetail> {
+  const params = new URLSearchParams();
+  if (limit !== undefined) params.set("limit", String(limit));
+  if (offset !== undefined) params.set("offset", String(offset));
+  const query = params.toString();
+  return authedJson<UploadDetail>(
+    `/api/uploads/${id}${query ? `?${query}` : ""}`,
+  );
+}
+
+// The analysis view: findings, narrative and chart data, without the entries table.
+export async function getAnomalies(id: number): Promise<AnomaliesOut> {
+  return authedJson<AnomaliesOut>(`/api/uploads/${id}/anomalies`);
 }
 
 // Exchange username/password for a JWT. Backend expects OAuth2 form encoding.

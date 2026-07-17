@@ -45,6 +45,7 @@ class LogEntryOut(BaseModel):
 class SummaryOut(BaseModel):
     total_entries: int
     flagged_count: int
+    narrative: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -57,8 +58,43 @@ class AnomalyFindingOut(BaseModel):
     severity: str
     reason: str
     source: str
+    # Claude's annotations; null when the LLM layer fell back. `severity` above is
+    # always the deterministic engine's, never overwritten.
+    explanation: str | None = None
+    llm_severity: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+class TimelineBucketOut(BaseModel):
+    start: str
+    requests: int
+    blocked: int
+
+
+class TalkerStatOut(BaseModel):
+    src_ip: str
+    requests: int
+    blocked: int
+    bytes_recv: int
+    bytes_sent: int
+
+
+class AnomaliesOut(BaseModel):
+    """The analysis view: what was found, what it means, and who to believe.
+
+    `llm_ok=False` means `narrative` came from the deterministic fallback and every
+    `explanation` is null — the findings themselves are unaffected either way.
+    """
+
+    upload_id: int
+    llm_ok: bool
+    narrative: str | None
+    flagged_count: int
+    total_entries: int
+    findings: list[AnomalyFindingOut]
+    timeline: list[TimelineBucketOut]
+    top_talkers: list[TalkerStatOut]
 
 
 class UploadDetail(BaseModel):
