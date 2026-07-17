@@ -49,8 +49,21 @@ class SummaryOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class AnomalyFindingOut(BaseModel):
+    id: int
+    entry_id: int | None
+    type: str
+    confidence: float
+    severity: str
+    reason: str
+    source: str
+
+    model_config = {"from_attributes": True}
+
+
 class UploadDetail(BaseModel):
     """Full analysis payload for a single upload."""
     upload: UploadOut
     summary: SummaryOut
     entries: list[LogEntryOut]
+    findings: list[AnomalyFindingOut]

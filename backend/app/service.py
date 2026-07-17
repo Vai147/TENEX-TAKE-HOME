@@ -1,7 +1,7 @@
-"""Analysis orchestration: save file, parse, persist entries + summary.
+"""Analysis orchestration: save file, parse, persist entries, detect, summarize.
 
-Anomaly detection (Phase 4) and the Claude layer (Phase 5) hook in here later.
-Kept separate from the HTTP route so the pipeline is testable in isolation.
+The Claude layer (Phase 5) hooks in here later. Kept separate from the HTTP route
+so the pipeline is testable in isolation.
 """
 from __future__ import annotations
 
@@ -11,7 +11,8 @@ import uuid
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.models import AnalysisSummary, LogEntry, Upload
+from app.detectors import run_detectors, top_findings
+from app.models import AnalysisSummary, AnomalyFinding, LogEntry, Upload
 from app.parser import parse_logs
 
 settings = get_settings()
@@ -45,28 +46,47 @@ def process_upload(
     text = raw_bytes.decode("utf-8", errors="replace")
     parsed = parse_logs(text)  # raises ValueError on unrecognized format
 
-    for e in parsed.entries:
-        db.add(
-            LogEntry(
-                upload_id=upload.id,
-                ts=e.ts,
-                src_ip=e.src_ip,
-                user=e.user,
-                url=e.url,
-                action=e.action,
-                status_code=e.status_code,
-                bytes_sent=e.bytes_sent,
-                bytes_recv=e.bytes_recv,
-                user_agent=e.user_agent,
-                raw=e.raw,
-            )
+    rows = [
+        LogEntry(
+            upload_id=upload.id,
+            ts=e.ts,
+            src_ip=e.src_ip,
+            user=e.user,
+            url=e.url,
+            action=e.action,
+            status_code=e.status_code,
+            bytes_sent=e.bytes_sent,
+            bytes_recv=e.bytes_recv,
+            user_agent=e.user_agent,
+            raw=e.raw,
         )
+        for e in parsed.entries
+    ]
+    db.add_all(rows)
+    db.flush()  # assigns row ids, which findings reference
+
+    findings = run_detectors(rows)
+    db.add_all(
+        AnomalyFinding(
+            upload_id=upload.id,
+            entry_id=f.entry_id,
+            type=f.type,
+            confidence=f.confidence,
+            severity=f.severity,
+            reason=f.reason,
+            source=f.source,
+        )
+        # Only the top slice is stored and shown; the count below stays honest.
+        for f in top_findings(findings)
+    )
 
     db.add(
         AnalysisSummary(
             upload_id=upload.id,
-            total_entries=len(parsed.entries),
-            flagged_count=0,  # populated in Phase 4
+            total_entries=len(rows),
+            # Counted over every finding, not the displayed slice, and over distinct
+            # entries, since one row can trip several detectors.
+            flagged_count=len({f.entry_id for f in findings if f.entry_id is not None}),
         )
     )
 

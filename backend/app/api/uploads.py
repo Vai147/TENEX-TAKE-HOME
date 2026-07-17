@@ -1,11 +1,11 @@
 """Upload + analysis-retrieval routes (JWT-guarded)."""
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.config import get_settings
 from app.db import get_db
-from app.models import AnalysisSummary, LogEntry, Upload, User
+from app.models import AnalysisSummary, AnomalyFinding, LogEntry, Upload, User
 from app.schemas import UploadDetail, UploadOut
 from app.service import process_upload
 
@@ -13,6 +13,11 @@ settings = get_settings()
 router = APIRouter(prefix="/api/uploads", tags=["uploads"])
 
 ALLOWED_EXT = {".log", ".txt", ".csv"}
+
+# A 10 MB upload is tens of thousands of rows; serializing them all into one JSON
+# response is a self-inflicted outage waiting on the upload cap being raised.
+DEFAULT_ENTRY_LIMIT = 500
+MAX_ENTRY_LIMIT = 5_000
 
 
 @router.post("", response_model=UploadOut, status_code=status.HTTP_201_CREATED)
@@ -62,9 +67,13 @@ def list_uploads(
 @router.get("/{upload_id}", response_model=UploadDetail)
 def get_upload(
     upload_id: int,
+    limit: int = Query(DEFAULT_ENTRY_LIMIT, ge=1, le=MAX_ENTRY_LIMIT),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
 ) -> UploadDetail:
+    """One upload's analysis. Entries are paged; `summary.total_entries` is the true
+    total, and findings are already capped by the detection engine."""
     upload = (
         db.query(Upload)
         .filter(Upload.id == upload_id, Upload.user_id == current.id)
@@ -82,7 +91,17 @@ def get_upload(
         db.query(LogEntry)
         .filter(LogEntry.upload_id == upload_id)
         .order_by(LogEntry.ts.asc().nullslast(), LogEntry.id.asc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+    findings = (
+        db.query(AnomalyFinding)
+        .filter(AnomalyFinding.upload_id == upload_id)
+        .order_by(AnomalyFinding.confidence.desc(), AnomalyFinding.id.asc())
         .all()
     )
 
-    return UploadDetail(upload=upload, summary=summary, entries=entries)
+    return UploadDetail(
+        upload=upload, summary=summary, entries=entries, findings=findings
+    )

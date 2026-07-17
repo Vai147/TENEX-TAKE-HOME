@@ -13,6 +13,8 @@ import io
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
+BOM = "\ufeff"  # zero-width; spelled as an escape so it stays visible in source
+
 # Canonical column names we understand. Parsing is tolerant of column order
 # and of unknown extra columns (ignored).
 KNOWN_FIELDS = {
@@ -89,7 +91,11 @@ def parse_logs(text: str) -> ParseResult:
     Requires a header row containing at least the known column names.
     """
     result = ParseResult()
-    reader = csv.DictReader(io.StringIO(text))
+    # Excel's "CSV UTF-8" and most Windows exporters prefix a BOM. Left in place it
+    # becomes part of the first header name, so "timestamp" silently stops matching
+    # and every row parses with ts=None — muting the time-based detectors instead of
+    # failing loudly. Strip it before the header is read.
+    reader = csv.DictReader(io.StringIO(text.lstrip(BOM)))
 
     if reader.fieldnames is None:
         return result
