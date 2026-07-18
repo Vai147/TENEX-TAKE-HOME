@@ -10,9 +10,12 @@ from app.config import get_settings
 from app.db import get_db
 from app.enrich.service import VtNotConfigured, enrich_upload, get_enrichments
 from app.enrich.siem import to_cef_alerts, to_json_alerts
+from app.llm import LlmUnavailable, build_chat_context, chat
 from app.models import AnalysisSummary, AnomalyFinding, LogEntry, Upload, User
 from app.schemas import (
     AnomaliesOut,
+    ChatReply,
+    ChatRequest,
     EnrichResultOut,
     ThreatIntelOut,
     UploadDetail,
@@ -202,6 +205,53 @@ def get_threat_intel(
         enabled=settings.virustotal_enabled,
         enrichments=get_enrichments(db, upload_id),
     )
+
+
+@router.post("/{upload_id}/chat", response_model=ChatReply)
+def chat_about_upload(
+    upload_id: int,
+    body: ChatRequest,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user),
+) -> ChatReply:
+    """Answer a free-form question about this upload's analysis.
+
+    Grounded in the stored summary, findings and VirusTotal enrichments — the model
+    is told to answer only from that context. Multi-turn: the client replays prior
+    turns as `history`. Returns 503 when the LLM layer is unavailable (no key or API
+    error), so the chat panel degrades gracefully instead of breaking.
+    """
+    _owned_upload(db, upload_id, current)
+
+    summary = (
+        db.query(AnalysisSummary)
+        .filter(AnalysisSummary.upload_id == upload_id)
+        .first()
+    )
+    findings = (
+        db.query(AnomalyFinding)
+        .filter(AnomalyFinding.upload_id == upload_id)
+        .order_by(AnomalyFinding.confidence.desc(), AnomalyFinding.id.asc())
+        .all()
+    )
+    context = build_chat_context(
+        narrative=summary.narrative if summary else None,
+        total_entries=summary.total_entries if summary else 0,
+        flagged_count=summary.flagged_count if summary else 0,
+        timeline=json.loads(summary.timeline_json) if summary and summary.timeline_json else [],
+        top_talkers=(
+            json.loads(summary.top_talkers_json) if summary and summary.top_talkers_json else []
+        ),
+        findings=findings,
+        enrichments=get_enrichments(db, upload_id),
+    )
+    history = [{"role": turn.role, "content": turn.content} for turn in body.history]
+
+    try:
+        answer = chat(context, history, body.message)
+    except LlmUnavailable as exc:
+        raise HTTPException(status_code=503, detail=f"Assistant unavailable: {exc}")
+    return ChatReply(answer=answer)
 
 
 @router.get("/{upload_id}/alerts")

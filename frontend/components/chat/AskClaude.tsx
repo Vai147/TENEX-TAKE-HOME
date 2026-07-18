@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { sendChatMessage, type ChatContext } from "@/lib/api";
+import { sendChatMessage, type ChatContext, type ChatTurn } from "@/lib/api";
 
 interface ChatMessage {
   from: "claude" | "you";
@@ -36,11 +36,18 @@ export function AskClaude({ uploadId, context = null }: AskClaudeProps) {
     const text = input.trim();
     if (!text || sending) return;
 
+    // Build history from the turns so far, before this message and minus the
+    // static greeting. The backend appends `text` itself, so it is excluded here.
+    const history: ChatTurn[] = messages.slice(1).map((m) => ({
+      role: m.from === "you" ? "user" : "assistant",
+      content: m.text,
+    }));
+
     setMessages((prev) => [...prev, { from: "you", text }]);
     setInput("");
     setSending(true);
     try {
-      const reply = await sendChatMessage(uploadId ?? 0, text, context);
+      const reply = await sendChatMessage(uploadId ?? 0, text, context, history);
       setMessages((prev) => [...prev, { from: "claude", text: reply }]);
     } catch {
       setMessages((prev) => [
@@ -131,7 +138,7 @@ function Bubble({ msg }: { msg: ChatMessage }) {
       >
         {isClaude ? "CLAUDE" : "YOU"}
       </p>
-      <p className="mt-1.5 text-[12px] leading-relaxed text-ink-secondary">
+      <p className="mt-1.5 whitespace-pre-line text-[12px] leading-relaxed text-ink-secondary">
         {msg.text}
       </p>
     </div>

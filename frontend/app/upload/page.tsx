@@ -26,7 +26,7 @@ export default function UploadPage() {
     setLoading(true);
     try {
       const upload = await uploadFile(file);
-      router.push(`/results/${upload.id}`);
+      router.push(`/uploads/${upload.id}/overview`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
       setLoading(false);

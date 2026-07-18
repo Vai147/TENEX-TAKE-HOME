@@ -65,7 +65,7 @@ export function DashboardTab({ analysis, entries }: DashboardTabProps) {
           <DetectorDonut
             detectors={detectors}
             total={totalFindings}
-            onOpenAlerts={() => router.push(`/results/${uploadId}?tab=alerts`)}
+            onOpenAlerts={() => router.push(`/uploads/${uploadId}/alerts`)}
           />
         </Card>
 

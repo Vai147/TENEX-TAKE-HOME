@@ -148,3 +148,60 @@ class ThreatIntelOut(BaseModel):
     upload_id: int
     enabled: bool  # whether VirusTotal is configured
     enrichments: list[IocEnrichmentOut]
+
+
+# --- "Ask Claude" chat -------------------------------------------------------
+
+MAX_CHAT_MESSAGE_LENGTH = 1_000
+# Cap the client-supplied transcript so a request cannot carry an unbounded payload;
+# the LLM layer additionally replays only its most recent turns.
+MAX_CHAT_HISTORY_TURNS = 50
+
+
+class ChatTurn(BaseModel):
+    role: str  # user | assistant
+    content: str
+
+    @field_validator("role")
+    @classmethod
+    def _valid_role(cls, value: str) -> str:
+        if value not in ("user", "assistant"):
+            raise ValueError("role must be 'user' or 'assistant'")
+        return value
+
+    @field_validator("content")
+    @classmethod
+    def _non_empty_content(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("content must not be empty")
+        return value
+
+
+class ChatRequest(BaseModel):
+    message: str
+    history: list[ChatTurn] = []
+
+    @field_validator("message")
+    @classmethod
+    def _valid_message(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("message must not be empty")
+        if len(stripped) > MAX_CHAT_MESSAGE_LENGTH:
+            raise ValueError(
+                f"message exceeds {MAX_CHAT_MESSAGE_LENGTH} characters"
+            )
+        return stripped
+
+    @field_validator("history")
+    @classmethod
+    def _bounded_history(cls, value: list[ChatTurn]) -> list[ChatTurn]:
+        if len(value) > MAX_CHAT_HISTORY_TURNS:
+            raise ValueError(
+                f"history exceeds {MAX_CHAT_HISTORY_TURNS} turns"
+            )
+        return value
+
+
+class ChatReply(BaseModel):
+    answer: str

@@ -1,6 +1,6 @@
-// The results view is a single route with four sub-views selected by `?tab=`.
-// Keeping the tab in the URL makes it shareable and lets the detector-pie
-// click-through ("open alerts") be a plain navigation.
+// The results view lives at /uploads/{id}/{tab}: each sub-view is its own path
+// segment, so the URL is shareable, refresh-safe, and the detector-pie
+// click-through ("open alerts") is a plain navigation.
 
 export const RESULT_TABS = [
   "overview",
@@ -12,9 +12,24 @@ export const RESULT_TABS = [
 
 export type ResultTab = (typeof RESULT_TABS)[number];
 
-const DEFAULT_TAB: ResultTab = "overview";
+export const DEFAULT_TAB: ResultTab = "overview";
 
-/** Narrow an untrusted `?tab=` value to a real tab, defaulting to overview. */
-export function tabFromQuery(raw: string | null): ResultTab {
-  return RESULT_TABS.includes(raw as ResultTab) ? (raw as ResultTab) : DEFAULT_TAB;
+/** True when `raw` is a real tab segment. */
+export function isResultTab(raw: string | null | undefined): raw is ResultTab {
+  return RESULT_TABS.includes(raw as ResultTab);
+}
+
+/** Narrow an untrusted path segment to a real tab, defaulting to overview. */
+export function tabFromParam(raw: string | null | undefined): ResultTab {
+  return isResultTab(raw) ? (raw as ResultTab) : DEFAULT_TAB;
+}
+
+/**
+ * Map a legacy `?tab=` value to its new path segment. `dashboard` collapses to
+ * overview per the route migration; anything unknown or missing falls back to
+ * overview too.
+ */
+export function legacyTabToPath(raw: string | null | undefined): ResultTab {
+  if (raw === "dashboard") return DEFAULT_TAB;
+  return tabFromParam(raw);
 }

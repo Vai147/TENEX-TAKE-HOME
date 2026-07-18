@@ -203,23 +203,33 @@ export interface ChatContext {
   narrative: string | null;
 }
 
-// "Ask Claude" chat.
+export interface ChatTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
+// "Ask Claude" chat: POST /api/uploads/{id}/chat.
 //
-// The backend has no chat endpoint yet — the planned route is
-// POST /api/uploads/{id}/chat, calling the LLM layer with the analysis as
-// context (see the handoff decision). Until then this is a context-aware stub so
-// the panel is fully wired; swapping in the real request is a one-function change
-// here, with the UI untouched.
+// Multi-turn — `history` replays prior turns so follow-ups keep context. Grounding
+// (summary, findings, threat intel) is assembled server-side from the stored
+// analysis, so the client sends only the transcript, not the analysis itself; the
+// `context` prop is retained for the panel's greeting/scope line. A 503 (LLM layer
+// unavailable) surfaces as a thrown error the panel already handles.
 export async function sendChatMessage(
-  _uploadId: number,
+  uploadId: number,
   message: string,
-  context: ChatContext | null,
+  _context: ChatContext | null,
+  history: ChatTurn[] = [],
 ): Promise<string> {
-  await new Promise((resolve) => setTimeout(resolve, 350));
-  const scope = context
-    ? `${context.totalEntries.toLocaleString()} entries, ${context.flaggedCount} flagged, ${context.findingCount} findings`
-    : "no analysis loaded yet";
-  return `[chat backend pending] I'd answer using this upload's analysis (${scope}). You asked: "${message}"`;
+  const { answer } = await authedJson<{ answer: string }>(
+    `/api/uploads/${uploadId}/chat`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, history }),
+    },
+  );
+  return answer;
 }
 
 // Exchange username/password for a JWT. Backend expects OAuth2 form encoding.

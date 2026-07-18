@@ -36,7 +36,7 @@ export function ConsoleHeader({ variant, uploadId, activeTab }: ConsoleHeaderPro
     variant === "login"
       ? undefined
       : uploadId !== undefined
-        ? `/results/${uploadId}?tab=overview`
+        ? `/uploads/${uploadId}/overview`
         : "/upload";
 
   return (
@@ -107,7 +107,7 @@ function TabNav({
         return (
           <Link
             key={tab}
-            href={`/results/${uploadId}?tab=${tab}`}
+            href={`/uploads/${uploadId}/${tab}`}
             scroll={false}
             aria-current={active ? "page" : undefined}
             className={`-mb-px border-b-2 px-3.5 py-3 text-[13px] font-medium transition-colors ${
