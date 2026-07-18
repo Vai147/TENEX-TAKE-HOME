@@ -2,12 +2,13 @@
 import json
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.config import get_settings
 from app.db import get_db
+from app.attack_layer import build_navigator_layer
 from app.enrich.service import VtNotConfigured, enrich_upload, get_enrichments
 from app.enrich.siem import to_cef_alerts, to_json_alerts
 from app.llm import LlmUnavailable, build_chat_context, chat
@@ -267,3 +268,31 @@ def export_alerts(
     if format == "cef":
         return PlainTextResponse(to_cef_alerts(rows), media_type="text/plain")
     return {"upload_id": upload_id, "alerts": to_json_alerts(rows)}
+
+
+@router.get("/{upload_id}/attack-layer")
+def export_attack_layer(
+    upload_id: int,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user),
+):
+    """ATT&CK Navigator layer JSON for this upload's findings.
+
+    Downloads as a file the analyst loads into MITRE's Navigator to see the
+    matrix light up. Techniques are scored by finding count; unmapped findings
+    (e.g. off_hours) are omitted.
+    """
+    upload = _owned_upload(db, upload_id, current)
+    findings = (
+        db.query(AnomalyFinding)
+        .filter(AnomalyFinding.upload_id == upload_id)
+        .order_by(AnomalyFinding.confidence.desc(), AnomalyFinding.id.asc())
+        .all()
+    )
+    layer = build_navigator_layer(upload.filename, upload_id, findings)
+    return JSONResponse(
+        content=layer,
+        headers={
+            "Content-Disposition": f'attachment; filename="tenex-attack-{upload_id}.json"'
+        },
+    )

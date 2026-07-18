@@ -62,6 +62,17 @@ export const PIE_PALETTES: readonly (readonly string[])[] = [
   ["#2f6feb", "#7a5af8", "#12a150", "#f79009", "#98a2b3"],
 ] as const;
 
+// ATT&CK tactic ramp — cool (recon) warming to hot (exfiltration) along the kill
+// chain, with a muted gray for behavioural findings that map to no technique.
+export const ATTACK_TACTIC_HEX: Record<string, string> = {
+  Reconnaissance: "#2f6feb",
+  "Initial Access": "#7a5af8",
+  "Credential Access": "#f79009",
+  "Command and Control": "#e5484d",
+  Exfiltration: "#d92d20",
+  Behavioural: "#98a2b3",
+};
+
 // Chart chrome sits one shade off the surface so the grid never competes with
 // the data drawn on top of it.
 export const CHART_INK = {

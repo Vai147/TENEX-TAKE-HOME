@@ -55,6 +55,11 @@ export interface AnomalyFindingOut {
   // always the deterministic engine's verdict and is never overwritten.
   explanation: string | null;
   llm_severity: Severity | null;
+  // MITRE ATT&CK, mapped from `type` server-side. Null for behavioural findings
+  // (e.g. off_hours) that map to no technique.
+  technique_id: string | null;
+  technique_name: string | null;
+  tactic: string | null;
 }
 
 export type Severity = "low" | "medium" | "high" | "critical";
@@ -194,6 +199,22 @@ export async function fetchAlertsExport(
   }
   if (!res.ok) throw new Error(`Export failed (${res.status})`);
   return format === "json" ? JSON.stringify(await res.json(), null, 2) : await res.text();
+}
+
+// The ATT&CK Navigator layer JSON for an upload, as a formatted string ready to
+// save. Load the file into MITRE's Navigator to see the matrix light up.
+export async function fetchAttackLayer(id: number): Promise<string> {
+  const token = getToken();
+  if (!token) throw new Error("Not authenticated");
+  const res = await fetch(`${API_BASE}/api/uploads/${id}/attack-layer`, {
+    headers: authHeaders(token),
+  });
+  if (res.status === 401) {
+    clearToken();
+    throw new Error("Session expired");
+  }
+  if (!res.ok) throw new Error(`Export failed (${res.status})`);
+  return JSON.stringify(await res.json(), null, 2);
 }
 
 export interface ChatContext {

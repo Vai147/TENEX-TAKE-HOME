@@ -15,7 +15,8 @@ import {
 } from "recharts";
 
 import { useReducedMotion } from "@/hooks/useReducedMotion";
-import type { AnomaliesOut, LogEntryOut } from "@/lib/api";
+import { fetchAttackLayer, type AnomaliesOut, type LogEntryOut } from "@/lib/api";
+import { buildTacticSlices, type TacticSlice } from "@/lib/attack";
 import { deriveBreakdowns, orNotLoaded, type Breakdowns } from "@/lib/breakdowns";
 import { detectorLabel, formatHour, formatNumber } from "@/lib/format";
 import { CHART_INK, PIE_PALETTES, SERIES } from "@/lib/palette";
@@ -50,6 +51,10 @@ export function DashboardTab({ analysis, entries }: DashboardTabProps) {
   const totalFindings = analysis.findings.length;
   const detSummary = `${totalFindings} findings across ${detectors.length} detector${detectors.length === 1 ? "" : "s"}`;
 
+  const tactics = useMemo(() => buildTacticSlices(analysis.findings), [analysis.findings]);
+  const mappedCount = tactics.reduce((sum, t) => sum + t.count, 0);
+  const attackSummary = `${tactics.length} ATT&CK tactic${tactics.length === 1 ? "" : "s"} across the kill chain`;
+
   return (
     <div className="flex flex-col gap-5">
       <div>
@@ -79,9 +84,150 @@ export function DashboardTab({ analysis, entries }: DashboardTabProps) {
       </div>
 
       <Card>
+        <CardHead
+          title="Findings by ATT&CK tactic"
+          sub={`${attackSummary} — hover a slice for techniques and hosts`}
+        />
+        <AttackDonut
+          tactics={tactics}
+          total={mappedCount}
+          breakdowns={breakdowns}
+          onOpenAlerts={() => router.push(`/uploads/${uploadId}/alerts`)}
+        />
+        <NavigatorDownload uploadId={uploadId} disabled={mappedCount === 0} />
+      </Card>
+
+      <Card>
         <CardHead title="Top source IPs" sub="busiest talkers, allowed vs blocked" />
         <TopTalkers topTalkers={analysis.top_talkers} breakdowns={breakdowns} />
       </Card>
+    </div>
+  );
+}
+
+// ---- ATT&CK tactic donut ----
+
+function tacticIps(slice: TacticSlice, breakdowns: Breakdowns): string[] {
+  const ips = new Set<string>();
+  for (const type of slice.types) {
+    for (const ip of breakdowns.detectorIps.get(type) ?? []) ips.add(ip);
+  }
+  return [...ips];
+}
+
+function AttackDonut({
+  tactics,
+  total,
+  breakdowns,
+  onOpenAlerts,
+}: {
+  tactics: TacticSlice[];
+  total: number;
+  breakdowns: Breakdowns;
+  onOpenAlerts: () => void;
+}) {
+  const reduced = useReducedMotion();
+  const [hover, setHover] = useState<string | null>(null);
+  const active = tactics.find((t) => t.tactic === hover) ?? null;
+
+  if (tactics.length === 0) {
+    return (
+      <p className="py-12 text-center text-[13px] text-ink-muted">
+        No findings to map onto ATT&CK yet.
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-[22px] flex flex-wrap items-center gap-6">
+      <div className="relative h-[150px] w-[150px] flex-none">
+        <PieChart width={150} height={150}>
+          <Pie
+            data={tactics}
+            dataKey="count"
+            nameKey="tactic"
+            cx="50%"
+            cy="50%"
+            innerRadius={43}
+            outerRadius={75}
+            stroke="none"
+            isAnimationActive={!reduced}
+            onMouseLeave={() => setHover(null)}
+          >
+            {tactics.map((t) => (
+              <Cell
+                key={t.tactic}
+                fill={t.color}
+                fillOpacity={hover === null || hover === t.tactic ? 1 : 0.3}
+                style={{ cursor: "pointer", transition: "fill-opacity 0.15s" }}
+                onMouseEnter={() => setHover(t.tactic)}
+                onClick={onOpenAlerts}
+              />
+            ))}
+          </Pie>
+        </PieChart>
+
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+          <span className="font-mono text-[22px] font-semibold text-ink-primary">
+            {total}
+          </span>
+          <span className="text-[10px] tracking-[0.04em] text-ink-faint">findings</span>
+        </div>
+
+        {active && (
+          <div
+            className="pointer-events-none absolute left-[calc(100%+14px)] top-1/2 z-30 flex w-[240px] -translate-y-1/2 flex-col gap-1.5 rounded-lg border border-border bg-surface p-3 shadow-popover"
+            style={{ borderTop: `2px solid ${active.color}` }}
+          >
+            <span
+              className="text-[10px] font-semibold tracking-[0.04em]"
+              style={{ color: active.color }}
+            >
+              {active.tactic} · {active.count} findings
+            </span>
+            <span className="text-[10px] font-medium text-ink-faint">Techniques</span>
+            {active.techniques.length > 0 ? (
+              active.techniques.map((technique, i) => (
+                <span key={i} className="font-mono text-[11px] leading-relaxed text-[#475467]">
+                  • {technique}
+                </span>
+              ))
+            ) : (
+              <span className="text-[11px] leading-relaxed text-[#475467]">
+                behavioural signal — no ATT&CK technique
+              </span>
+            )}
+            <span className="mt-0.5 text-[10px] font-medium text-ink-faint">Source IPs</span>
+            {orNotLoaded(tacticIps(active, breakdowns)).map((ip, i) => (
+              <span key={i} className="font-mono text-[11px] leading-relaxed text-[#475467]">
+                • {ip}
+              </span>
+            ))}
+            <span className="mt-0.5 text-[10px] text-ink-faint">click slice to open alerts</span>
+          </div>
+        )}
+      </div>
+
+      <ul className="flex min-w-[200px] flex-1 flex-col gap-2">
+        {tactics.map((t) => (
+          <li key={t.tactic} className="flex items-center gap-2 text-[12px]">
+            <span
+              className="h-2 w-2 flex-none rounded-[2px]"
+              style={{ background: t.color }}
+              aria-hidden="true"
+            />
+            <span className="text-ink-secondary">{t.tactic}</span>
+            {t.techniques[0] && (
+              <span className="font-mono text-[10px] text-ink-faint">
+                {t.techniques[0].split(" ")[0]}
+              </span>
+            )}
+            <span className="ml-auto font-mono font-semibold text-ink-primary">
+              {t.count}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -204,6 +350,53 @@ function DetectorDonut({
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+function NavigatorDownload({
+  uploadId,
+  disabled,
+}: {
+  uploadId: number;
+  disabled: boolean;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function download() {
+    setBusy(true);
+    setError(null);
+    try {
+      const text = await fetchAttackLayer(uploadId);
+      const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `tenex-attack-${uploadId}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Download failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-divider pt-3.5">
+      <button
+        type="button"
+        onClick={download}
+        disabled={disabled || busy}
+        className="inline-flex items-center gap-1.5 text-[12px] font-medium text-accent transition-colors hover:text-accent-hover disabled:cursor-not-allowed disabled:text-ink-faint"
+      >
+        <span aria-hidden="true">↓</span>
+        {busy ? "Preparing…" : "Download ATT&CK Navigator layer"}
+      </button>
+      <span className="text-[11px] text-ink-faint">
+        open in MITRE ATT&CK Navigator
+      </span>
+      {error && <span className="text-[11px] text-error-text">{error}</span>}
     </div>
   );
 }

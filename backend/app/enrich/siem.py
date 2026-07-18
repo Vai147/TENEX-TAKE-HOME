@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 from collections.abc import Sequence
 
+from app.attack import THREAT_INTEL_ATTACK
 from app.enrich.verdict import severity_for
 from app.enrich.virustotal import VtVerdict
 from app.models import IocEnrichment
@@ -59,6 +60,14 @@ def to_json_alerts(rows: Sequence[IocEnrichment]) -> list[dict]:
                 },
                 "reputation": row.reputation,
                 "threat_labels": json.loads(row.threat_labels) if row.threat_labels else [],
+                # ATT&CK so a SOAR can pivot/trigger on the technique. A VT-flagged
+                # destination is malware/C2 communication (T1071).
+                "attack": {
+                    "tactic": THREAT_INTEL_ATTACK.tactic,
+                    "tactic_id": THREAT_INTEL_ATTACK.tactic_id,
+                    "technique_id": THREAT_INTEL_ATTACK.technique_id,
+                    "technique_name": THREAT_INTEL_ATTACK.technique_name,
+                },
                 "source_entry_id": row.entry_id,
                 "reference": row.vt_link,
                 "observed_at": row.fetched_at.isoformat() if row.fetched_at else None,
@@ -101,6 +110,12 @@ def to_cef_alerts(rows: Sequence[IocEnrichment]) -> str:
             "cs1": ", ".join(labels) if labels else "n/a",
             "cn1Label": "maliciousEngines",
             "cn1": str(row.malicious),
+            # ATT&CK technique + tactic in CEF custom-string fields so a SOAR can
+            # key playbooks off the T-code.
+            "cs2Label": "mitreTechnique",
+            "cs2": f"{THREAT_INTEL_ATTACK.technique_id} {THREAT_INTEL_ATTACK.technique_name}",
+            "cs3Label": "mitreTactic",
+            "cs3": THREAT_INTEL_ATTACK.tactic,
             "reference": row.vt_link or "n/a",
         }
         extension = " ".join(

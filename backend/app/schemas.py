@@ -2,7 +2,9 @@
 import json
 from datetime import datetime
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
+
+from app.attack import finding_attack
 
 
 class Token(BaseModel):
@@ -63,8 +65,22 @@ class AnomalyFindingOut(BaseModel):
     # always the deterministic engine's, never overwritten.
     explanation: str | None = None
     llm_severity: str | None = None
+    # MITRE ATT&CK, derived from `type` on serialization (see app/attack.py).
+    # Null for behavioural findings that map to no technique (e.g. off_hours).
+    technique_id: str | None = None
+    technique_name: str | None = None
+    tactic: str | None = None
 
     model_config = {"from_attributes": True}
+
+    @model_validator(mode="after")
+    def _attach_attack(self) -> "AnomalyFindingOut":
+        technique = finding_attack(self.type)
+        if technique is not None:
+            self.technique_id = technique.technique_id
+            self.technique_name = technique.technique_name
+            self.tactic = technique.tactic
+        return self
 
 
 class TimelineBucketOut(BaseModel):
