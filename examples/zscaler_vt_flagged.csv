@@ -1,15 +1,189 @@
 timestamp,user,src_ip,url,action,status,bytes_sent,bytes_recv,user_agent
-2026-07-14T08:58:12Z,alice@corp.com,10.0.4.21,https://mail.google.com/inbox,Allowed,200,1180,84120,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
-2026-07-14T09:01:47Z,bob@corp.com,10.0.4.22,https://docs.google.com/document/d/1a2b,Allowed,200,910,44210,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
-2026-07-14T09:04:33Z,carol@corp.com,10.0.4.23,https://github.com/orgs/corp/repos,Allowed,200,1490,201884,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
-2026-07-14T09:12:05Z,dave@corp.com,10.0.4.24,https://s3.amazonaws.com/corp-backups,Allowed,200,2010,140220,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
-2026-07-14T11:41:18Z,dave@corp.com,10.0.4.24,https://malware.wicar.org/data/eicar.com,Blocked,403,540,0,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
-2026-07-14T11:41:52Z,dave@corp.com,10.0.4.24,https://malware.wicar.org/data/eicar.com,Blocked,403,540,0,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
-2026-07-14T11:42:29Z,dave@corp.com,10.0.4.24,https://malware.wicar.org/data/eicar.com,Blocked,403,540,0,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
-2026-07-14T11:47:03Z,dave@corp.com,10.0.4.24,https://secure.eicar.org/eicar.com.txt,Blocked,403,488,0,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
-2026-07-14T11:47:41Z,dave@corp.com,10.0.4.24,https://secure.eicar.org/eicar.com.txt,Blocked,403,488,0,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
-2026-07-14T11:53:16Z,dave@corp.com,10.0.4.24,https://testsafebrowsing.appspot.com/s/malware.html,Blocked,403,402,0,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
-2026-07-14T11:58:44Z,dave@corp.com,10.0.4.24,https://ianfette.org/,Blocked,403,360,0,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
-2026-07-14T12:05:09Z,eve@corp.com,10.0.4.25,https://outlook.office365.com,Allowed,200,1090,86140,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
-2026-07-14T12:11:37Z,carol@corp.com,10.0.4.23,https://pypi.org/project/requests,Allowed,200,670,44880,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
-2026-07-14T13:20:55Z,alice@corp.com,10.0.4.21,https://mail.google.com/inbox,Allowed,200,1210,88970,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T02:14:00Z,unknown,192.168.9.66,https://login.corp.com/auth,Blocked,401,180,0,curl/8.4.0
+2026-07-14T02:14:01Z,unknown,192.168.9.66,https://login.corp.com/auth,Blocked,401,180,0,curl/8.4.0
+2026-07-14T02:14:02Z,unknown,192.168.9.66,https://login.corp.com/auth,Blocked,401,180,0,curl/8.4.0
+2026-07-14T02:14:03Z,unknown,192.168.9.66,https://login.corp.com/auth,Blocked,401,180,0,curl/8.4.0
+2026-07-14T02:14:04Z,unknown,192.168.9.66,https://login.corp.com/auth,Blocked,401,180,0,curl/8.4.0
+2026-07-14T02:14:05Z,unknown,192.168.9.66,https://login.corp.com/auth,Blocked,401,180,0,curl/8.4.0
+2026-07-14T02:14:06Z,unknown,192.168.9.66,https://login.corp.com/auth,Blocked,401,180,0,curl/8.4.0
+2026-07-14T02:14:07Z,unknown,192.168.9.66,https://login.corp.com/auth,Blocked,401,180,0,curl/8.4.0
+2026-07-14T02:14:08Z,unknown,192.168.9.66,https://login.corp.com/auth,Blocked,401,180,0,curl/8.4.0
+2026-07-14T02:14:09Z,unknown,192.168.9.66,https://login.corp.com/auth,Blocked,401,180,0,curl/8.4.0
+2026-07-14T02:14:10Z,unknown,192.168.9.66,https://login.corp.com/auth,Allowed,200,180,420,curl/8.4.0
+2026-07-14T02:15:22Z,unknown,192.168.9.66,https://internal.corp.com/api/users/export,Allowed,200,142880422,900,sqlmap/1.8
+2026-07-14T02:16:48Z,unknown,192.168.9.66,https://internal.corp.com/api/db/dump,Allowed,200,542880422,1200,sqlmap/1.8
+2026-07-14T02:18:08Z,unknown,192.168.9.66,https://internal.corp.com/admin/config,Blocked,403,200,0,sqlmap/1.8
+2026-07-14T02:19:38Z,unknown,192.168.9.66,https://internal.corp.com/admin/config,Blocked,403,200,0,sqlmap/1.8
+2026-07-14T02:20:52Z,unknown,192.168.9.66,https://internal.corp.com/admin/config,Blocked,403,200,0,sqlmap/1.8
+2026-07-14T02:21:40Z,unknown,192.168.9.66,https://internal.corp.com/admin/config,Blocked,403,200,0,sqlmap/1.8
+2026-07-14T02:22:32Z,unknown,192.168.9.66,https://internal.corp.com/admin/config,Blocked,403,200,0,sqlmap/1.8
+2026-07-14T02:23:17Z,unknown,192.168.9.66,https://internal.corp.com/admin/config,Blocked,403,200,0,sqlmap/1.8
+2026-07-14T02:24:56Z,unknown,192.168.9.66,https://internal.corp.com/admin/config,Blocked,403,200,0,sqlmap/1.8
+2026-07-14T02:25:07Z,unknown,192.168.9.66,https://internal.corp.com/admin/config,Blocked,403,200,0,sqlmap/1.8
+2026-07-14T02:26:45Z,unknown,192.168.9.66,https://internal.corp.com/admin/config,Blocked,403,200,0,sqlmap/1.8
+2026-07-14T02:27:23Z,unknown,192.168.9.66,https://internal.corp.com/admin/config,Blocked,403,200,0,sqlmap/1.8
+2026-07-14T03:31:57Z,svc-backup,192.168.9.77,https://malware.wicar.org/data/eicar.com,Allowed,200,512,873,python-requests/2.31
+2026-07-14T03:53:21Z,svc-backup,192.168.9.77,https://secure.eicar.org/eicar.com.txt,Blocked,403,512,0,python-requests/2.31
+2026-07-14T03:56:31Z,svc-backup,192.168.9.77,https://secure.eicar.org/eicar.com.txt,Blocked,403,512,0,python-requests/2.31
+2026-07-14T04:25:01Z,svc-backup,192.168.9.77,https://malware.wicar.org/data/eicar.com,Blocked,403,512,0,python-requests/2.31
+2026-07-14T04:48:21Z,svc-backup,192.168.9.77,https://secure.eicar.org/eicar.com.txt,Blocked,403,512,0,python-requests/2.31
+2026-07-14T08:04:40Z,frank@corp.com,10.0.4.26,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,1446,132916,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T08:05:16Z,frank@corp.com,10.0.4.26,https://mail.google.com/inbox,Allowed,200,989,124729,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T08:16:02Z,frank@corp.com,10.0.4.26,https://mail.google.com/inbox,Allowed,200,475,212172,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T08:24:21Z,eve@corp.com,10.0.4.25,https://outlook.office365.com/mail/inbox,Allowed,200,2955,97451,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T08:30:58Z,carol@corp.com,10.0.4.23,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,1809,229621,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T08:31:17Z,dave@corp.com,10.0.4.24,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,807,201452,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T08:31:53Z,bob@corp.com,10.0.4.22,https://outlook.office365.com/mail/inbox,Allowed,200,1146,88877,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T08:33:45Z,frank@corp.com,10.0.4.26,https://docs.google.com/document/d/1a2b,Allowed,200,848,62322,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T08:35:54Z,alice@corp.com,10.0.4.21,https://docs.google.com/document/d/1a2b,Allowed,200,1586,129874,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T08:36:09Z,bob@corp.com,10.0.4.22,https://outlook.office365.com/mail/inbox,Allowed,200,815,115318,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T08:36:37Z,alice@corp.com,10.0.4.21,https://pypi.org/project/requests,Allowed,200,603,77955,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T08:39:13Z,alice@corp.com,10.0.4.21,https://pypi.org/project/requests,Allowed,200,3186,159387,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T08:40:34Z,dave@corp.com,10.0.4.24,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,1401,148265,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T08:51:46Z,carol@corp.com,10.0.4.23,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,820,158040,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T08:52:53Z,dave@corp.com,10.0.4.24,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,2501,184451,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T08:55:28Z,carol@corp.com,10.0.4.23,https://docs.google.com/document/d/1a2b,Allowed,200,2892,21030,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T09:09:47Z,dave@corp.com,10.0.4.24,https://outlook.office365.com/mail/inbox,Allowed,200,1472,114254,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T09:10:00Z,svc-backup,192.168.9.77,https://secure.eicar.org/eicar.com.txt,Blocked,403,512,0,python-requests/2.31
+2026-07-14T09:11:09Z,bob@corp.com,10.0.4.22,https://docs.google.com/document/d/1a2b,Allowed,200,3097,81167,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T09:14:06Z,carol@corp.com,10.0.4.23,https://docs.google.com/document/d/1a2b,Allowed,200,2325,71565,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T09:16:17Z,eve@corp.com,10.0.4.25,https://mail.google.com/inbox,Allowed,200,3590,67592,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T09:25:56Z,eve@corp.com,10.0.4.25,https://pypi.org/project/requests,Allowed,200,1066,195068,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T09:32:26Z,alice@corp.com,10.0.4.21,https://docs.google.com/document/d/1a2b,Allowed,200,3501,109667,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T09:42:15Z,eve@corp.com,10.0.4.25,https://pypi.org/project/requests,Allowed,200,699,75755,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T09:48:35Z,alice@corp.com,10.0.4.21,https://outlook.office365.com/mail/inbox,Allowed,200,3632,249501,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T09:51:16Z,frank@corp.com,10.0.4.26,https://mail.google.com/inbox,Allowed,200,2891,244455,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T09:53:42Z,carol@corp.com,10.0.4.23,https://mail.google.com/inbox,Allowed,200,1991,225076,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T10:00:21Z,frank@corp.com,10.0.4.26,https://pypi.org/project/requests,Allowed,200,743,144424,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T10:01:09Z,carol@corp.com,10.0.4.23,https://outlook.office365.com/mail/inbox,Allowed,200,2306,231419,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T10:03:05Z,frank@corp.com,10.0.4.26,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,3845,119845,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T10:04:23Z,grace@corp.com,10.0.4.30,https://ianfette.org/,Allowed,200,480,2913,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T10:06:37Z,alice@corp.com,10.0.4.21,https://outlook.office365.com/mail/inbox,Allowed,200,3016,69249,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T10:07:21Z,bob@corp.com,10.0.4.22,https://outlook.office365.com/mail/inbox,Allowed,200,615,46838,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T10:07:59Z,grace@corp.com,10.0.4.30,https://testsafebrowsing.appspot.com/s/malware.html,Allowed,200,480,2131,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T10:09:30Z,eve@corp.com,10.0.4.25,https://outlook.office365.com/mail/inbox,Allowed,200,3370,51545,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T10:18:46Z,dave@corp.com,10.0.4.24,https://outlook.office365.com/mail/inbox,Allowed,200,3034,57945,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T10:25:22Z,frank@corp.com,10.0.4.26,https://mail.google.com/inbox,Allowed,200,3828,54031,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T10:25:41Z,alice@corp.com,10.0.4.21,https://mail.google.com/inbox,Allowed,200,696,235292,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T10:26:07Z,eve@corp.com,10.0.4.25,https://pypi.org/project/requests,Allowed,200,2210,102832,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T10:27:55Z,carol@corp.com,10.0.4.23,https://docs.google.com/document/d/1a2b,Allowed,200,3783,249089,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T10:27:57Z,eve@corp.com,10.0.4.25,https://mail.google.com/inbox,Allowed,200,1501,24412,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T10:33:01Z,bob@corp.com,10.0.4.22,https://docs.google.com/document/d/1a2b,Allowed,200,2563,114831,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T10:34:07Z,alice@corp.com,10.0.4.21,https://outlook.office365.com/mail/inbox,Allowed,200,1663,166868,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T10:39:52Z,carol@corp.com,10.0.4.23,https://outlook.office365.com/mail/inbox,Allowed,200,2342,192298,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T10:40:16Z,bob@corp.com,10.0.4.22,https://github.com/orgs/corp/repos,Allowed,200,2866,115463,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T10:44:34Z,bob@corp.com,10.0.4.22,https://mail.google.com/inbox,Allowed,200,3505,158440,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T10:59:31Z,alice@corp.com,10.0.4.21,https://pypi.org/project/requests,Allowed,200,560,195168,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T11:01:16Z,carol@corp.com,10.0.4.23,https://docs.google.com/document/d/1a2b,Allowed,200,1599,151376,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T11:02:05Z,alice@corp.com,10.0.4.21,https://pypi.org/project/requests,Allowed,200,2112,38312,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T11:04:16Z,frank@corp.com,10.0.4.26,https://mail.google.com/inbox,Allowed,200,2258,23026,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T11:04:38Z,dave@corp.com,10.0.4.24,https://docs.google.com/document/d/1a2b,Allowed,200,1758,86568,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T11:05:01Z,dave@corp.com,10.0.4.24,https://mail.google.com/inbox,Allowed,200,945,187017,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T11:05:35Z,alice@corp.com,10.0.4.21,https://pypi.org/project/requests,Allowed,200,642,236754,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T11:05:36Z,alice@corp.com,10.0.4.21,https://github.com/orgs/corp/repos,Allowed,200,2551,149791,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T11:05:37Z,frank@corp.com,10.0.4.26,https://outlook.office365.com/mail/inbox,Allowed,200,3894,216749,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T11:10:45Z,eve@corp.com,10.0.4.25,https://pypi.org/project/requests,Allowed,200,2511,125856,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T11:12:17Z,eve@corp.com,10.0.4.25,https://mail.google.com/inbox,Allowed,200,3563,45623,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T11:12:45Z,grace@corp.com,10.0.4.30,https://ianfette.org/,Blocked,403,480,0,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T11:14:21Z,frank@corp.com,10.0.4.26,https://docs.google.com/document/d/1a2b,Allowed,200,3809,205263,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T11:30:56Z,carol@corp.com,10.0.4.23,https://docs.google.com/document/d/1a2b,Allowed,200,2177,226867,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T11:39:51Z,carol@corp.com,10.0.4.23,https://docs.google.com/document/d/1a2b,Allowed,200,3701,82754,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T11:43:31Z,dave@corp.com,10.0.4.24,https://github.com/orgs/corp/repos,Allowed,200,3303,155406,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T11:44:17Z,eve@corp.com,10.0.4.25,https://pypi.org/project/requests,Allowed,200,2481,159797,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T11:46:48Z,dave@corp.com,10.0.4.24,https://docs.google.com/document/d/1a2b,Allowed,200,1345,213941,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T11:48:37Z,carol@corp.com,10.0.4.23,https://github.com/orgs/corp/repos,Allowed,200,1462,162698,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T11:49:18Z,bob@corp.com,10.0.4.22,https://docs.google.com/document/d/1a2b,Allowed,200,3424,84910,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T11:59:27Z,grace@corp.com,10.0.4.30,https://www.wicar.org/data/test.html,Blocked,403,480,0,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T12:00:09Z,bob@corp.com,10.0.4.22,https://pypi.org/project/requests,Allowed,200,2589,116797,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T12:00:29Z,dave@corp.com,10.0.4.24,https://mail.google.com/inbox,Allowed,200,3464,151850,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T12:00:57Z,grace@corp.com,10.0.4.30,https://www.eicar.org/download,Blocked,403,480,0,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T12:02:29Z,frank@corp.com,10.0.4.26,https://docs.google.com/document/d/1a2b,Allowed,200,1045,90526,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T12:03:11Z,frank@corp.com,10.0.4.26,https://docs.google.com/document/d/1a2b,Allowed,200,1677,184802,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T12:25:09Z,eve@corp.com,10.0.4.25,https://outlook.office365.com/mail/inbox,Allowed,200,2508,169578,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T12:29:04Z,dave@corp.com,10.0.4.24,https://outlook.office365.com/mail/inbox,Allowed,200,2240,90426,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T12:29:29Z,dave@corp.com,10.0.4.24,https://pypi.org/project/requests,Allowed,200,3542,51064,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T12:30:16Z,carol@corp.com,10.0.4.23,https://docs.google.com/document/d/1a2b,Allowed,200,3236,178633,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T12:30:44Z,alice@corp.com,10.0.4.21,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,666,35904,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T12:32:41Z,frank@corp.com,10.0.4.26,https://docs.google.com/document/d/1a2b,Allowed,200,1416,152313,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T12:33:23Z,bob@corp.com,10.0.4.22,https://docs.google.com/document/d/1a2b,Allowed,200,1856,222358,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T12:33:48Z,frank@corp.com,10.0.4.26,https://docs.google.com/document/d/1a2b,Allowed,200,1587,136834,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T12:39:36Z,dave@corp.com,10.0.4.24,https://docs.google.com/document/d/1a2b,Allowed,200,451,146463,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T12:41:36Z,alice@corp.com,10.0.4.21,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,3766,136822,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T12:41:55Z,bob@corp.com,10.0.4.22,https://mail.google.com/inbox,Allowed,200,3251,241629,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T12:43:28Z,svc-backup,192.168.9.77,https://malware.wicar.org/data/eicar.com,Allowed,200,512,1406,python-requests/2.31
+2026-07-14T12:45:24Z,alice@corp.com,10.0.4.21,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,1821,25914,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T12:48:08Z,eve@corp.com,10.0.4.25,https://pypi.org/project/requests,Allowed,200,3879,197202,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T12:49:02Z,dave@corp.com,10.0.4.24,https://outlook.office365.com/mail/inbox,Allowed,200,2991,188496,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T12:50:07Z,eve@corp.com,10.0.4.25,https://docs.google.com/document/d/1a2b,Allowed,200,3333,188678,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T12:59:35Z,eve@corp.com,10.0.4.25,https://docs.google.com/document/d/1a2b,Allowed,200,3840,137316,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T13:01:21Z,eve@corp.com,10.0.4.25,https://outlook.office365.com/mail/inbox,Allowed,200,2278,135463,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T13:05:51Z,carol@corp.com,10.0.4.23,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,2021,141414,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T13:06:24Z,dave@corp.com,10.0.4.24,https://pypi.org/project/requests,Allowed,200,2687,33311,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T13:06:35Z,alice@corp.com,10.0.4.21,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,657,167945,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T13:09:16Z,eve@corp.com,10.0.4.25,https://docs.google.com/document/d/1a2b,Allowed,200,2315,77563,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T13:09:35Z,carol@corp.com,10.0.4.23,https://outlook.office365.com/mail/inbox,Allowed,200,936,25609,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T13:13:30Z,carol@corp.com,10.0.4.23,https://outlook.office365.com/mail/inbox,Allowed,200,2899,240315,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T13:15:02Z,frank@corp.com,10.0.4.26,https://github.com/orgs/corp/repos,Allowed,200,1292,113476,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T13:16:23Z,grace@corp.com,10.0.4.30,https://www.wicar.org/data/test.html,Allowed,200,480,1687,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T13:19:15Z,alice@corp.com,10.0.4.21,https://docs.google.com/document/d/1a2b,Allowed,200,3263,224427,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T13:21:44Z,alice@corp.com,10.0.4.21,https://github.com/orgs/corp/repos,Allowed,200,2834,150200,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T13:26:12Z,eve@corp.com,10.0.4.25,https://github.com/orgs/corp/repos,Allowed,200,1704,44168,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T13:28:51Z,carol@corp.com,10.0.4.23,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,1831,115587,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T13:35:26Z,frank@corp.com,10.0.4.26,https://github.com/orgs/corp/repos,Allowed,200,2946,53875,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T13:43:56Z,bob@corp.com,10.0.4.22,https://pypi.org/project/requests,Allowed,200,1345,59563,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T13:46:28Z,alice@corp.com,10.0.4.21,https://github.com/orgs/corp/repos,Allowed,200,2894,39189,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T13:47:16Z,bob@corp.com,10.0.4.22,https://pypi.org/project/requests,Allowed,200,3794,201418,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T14:03:12Z,bob@corp.com,10.0.4.22,https://mail.google.com/inbox,Allowed,200,1255,135507,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T14:04:25Z,grace@corp.com,10.0.4.30,https://testsafebrowsing.appspot.com/s/malware.html,Blocked,403,480,0,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T14:13:58Z,dave@corp.com,10.0.4.24,https://docs.google.com/document/d/1a2b,Allowed,200,705,172429,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T14:25:25Z,bob@corp.com,10.0.4.22,https://pypi.org/project/requests,Allowed,200,824,146228,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T14:25:58Z,bob@corp.com,10.0.4.22,https://pypi.org/project/requests,Allowed,200,730,63611,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T14:46:44Z,dave@corp.com,10.0.4.24,https://outlook.office365.com/mail/inbox,Allowed,200,970,157299,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T14:47:05Z,carol@corp.com,10.0.4.23,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,1050,64565,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T14:47:51Z,carol@corp.com,10.0.4.23,https://docs.google.com/document/d/1a2b,Allowed,200,1218,155695,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T14:49:20Z,alice@corp.com,10.0.4.21,https://pypi.org/project/requests,Allowed,200,2798,138799,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T14:53:08Z,carol@corp.com,10.0.4.23,https://mail.google.com/inbox,Allowed,200,3430,112742,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T14:55:35Z,bob@corp.com,10.0.4.22,https://github.com/orgs/corp/repos,Allowed,200,3293,128867,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T15:00:16Z,frank@corp.com,10.0.4.26,https://github.com/orgs/corp/repos,Allowed,200,1747,163412,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T15:06:42Z,frank@corp.com,10.0.4.26,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,2170,192100,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T15:07:07Z,bob@corp.com,10.0.4.22,https://pypi.org/project/requests,Allowed,200,2308,145932,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T15:12:30Z,dave@corp.com,10.0.4.24,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,3200,18000000,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T15:16:51Z,dave@corp.com,10.0.4.24,https://mail.google.com/inbox,Allowed,200,3865,89614,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T15:19:05Z,bob@corp.com,10.0.4.22,https://docs.google.com/document/d/1a2b,Allowed,200,818,216522,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T15:20:39Z,eve@corp.com,10.0.4.25,https://outlook.office365.com/mail/inbox,Allowed,200,2882,154260,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T15:22:10Z,alice@corp.com,10.0.4.21,https://outlook.office365.com/mail/inbox,Allowed,200,879,149418,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T15:22:46Z,carol@corp.com,10.0.4.23,https://mail.google.com/inbox,Allowed,200,514,227123,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T15:24:55Z,grace@corp.com,10.0.4.30,https://www.eicar.org/download,Blocked,403,480,0,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T15:25:35Z,bob@corp.com,10.0.4.22,https://github.com/orgs/corp/repos,Allowed,200,960,234769,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T15:31:54Z,dave@corp.com,10.0.4.24,https://pypi.org/project/requests,Allowed,200,714,145569,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T15:32:15Z,eve@corp.com,10.0.4.25,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,2543,249778,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T15:34:53Z,frank@corp.com,10.0.4.26,https://pypi.org/project/requests,Allowed,200,2475,100683,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T15:42:37Z,carol@corp.com,10.0.4.23,https://outlook.office365.com/mail/inbox,Allowed,200,2122,236829,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T15:44:20Z,eve@corp.com,10.0.4.25,https://mail.google.com/inbox,Allowed,200,1543,35080,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T15:57:55Z,bob@corp.com,10.0.4.22,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,3668,166609,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T16:03:20Z,eve@corp.com,10.0.4.25,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,2523,159126,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T16:04:07Z,eve@corp.com,10.0.4.25,https://docs.google.com/document/d/1a2b,Allowed,200,3989,47467,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T16:05:42Z,dave@corp.com,10.0.4.24,https://outlook.office365.com/mail/inbox,Allowed,200,670,215488,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T16:06:23Z,alice@corp.com,10.0.4.21,https://outlook.office365.com/mail/inbox,Allowed,200,637,153021,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T16:08:34Z,carol@corp.com,10.0.4.23,https://docs.google.com/document/d/1a2b,Allowed,200,2544,153836,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T16:12:19Z,dave@corp.com,10.0.4.24,https://mail.google.com/inbox,Allowed,200,2337,24588,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T16:25:19Z,svc-backup,192.168.9.77,https://secure.eicar.org/eicar.com.txt,Blocked,403,512,0,python-requests/2.31
+2026-07-14T16:28:35Z,eve@corp.com,10.0.4.25,https://mail.google.com/inbox,Allowed,200,3512,36611,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T16:30:50Z,eve@corp.com,10.0.4.25,https://mail.google.com/inbox,Allowed,200,2694,34895,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T16:34:49Z,carol@corp.com,10.0.4.23,https://outlook.office365.com/mail/inbox,Allowed,200,1750,186839,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T16:35:12Z,frank@corp.com,10.0.4.26,https://outlook.office365.com/mail/inbox,Allowed,200,2344,84403,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T16:36:53Z,dave@corp.com,10.0.4.24,https://mail.google.com/inbox,Allowed,200,3784,199954,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T16:39:41Z,bob@corp.com,10.0.4.22,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,3430,34153,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T16:42:18Z,frank@corp.com,10.0.4.26,https://outlook.office365.com/mail/inbox,Allowed,200,1392,201583,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T16:43:11Z,frank@corp.com,10.0.4.26,https://github.com/orgs/corp/repos,Allowed,200,1821,230679,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T17:01:04Z,bob@corp.com,10.0.4.22,https://docs.google.com/document/d/1a2b,Allowed,200,2915,118626,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T17:02:25Z,frank@corp.com,10.0.4.26,https://mail.google.com/inbox,Allowed,200,1627,99755,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T17:07:14Z,alice@corp.com,10.0.4.21,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,2969,172829,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T17:24:48Z,dave@corp.com,10.0.4.24,https://github.com/orgs/corp/repos,Allowed,200,3351,149549,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T17:36:20Z,bob@corp.com,10.0.4.22,https://docs.google.com/document/d/1a2b,Allowed,200,3228,245234,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T17:51:29Z,alice@corp.com,10.0.4.21,https://mail.google.com/inbox,Allowed,200,3840,44535,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T17:51:57Z,dave@corp.com,10.0.4.24,https://s3.amazonaws.com/corp-assets/logo.png,Allowed,200,3197,201751,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T20:46:09Z,svc-backup,192.168.9.77,https://malware.wicar.org/data/eicar.com,Blocked,403,512,0,python-requests/2.31
+2026-07-14T22:00:20Z,svc-backup,192.168.9.77,https://malware.wicar.org/data/eicar.com,Blocked,403,512,0,python-requests/2.31
+2026-07-14T22:26:22Z,svc-backup,192.168.9.77,https://secure.eicar.org/eicar.com.txt,Blocked,403,512,0,python-requests/2.31
+2026-07-14T23:20:07Z,svc-backup,192.168.9.77,https://malware.wicar.org/data/eicar.com,Allowed,200,512,1170,python-requests/2.31
