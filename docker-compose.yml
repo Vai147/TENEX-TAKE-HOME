@@ -25,6 +25,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-haiku-4-5-20251001}
+      VIRUSTOTAL_API_KEY: ${VIRUSTOTAL_API_KEY:-}
       FRONTEND_ORIGIN: http://localhost:3000
       UPLOAD_DIR: /data/uploads
     ports:

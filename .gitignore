@@ -3,7 +3,7 @@
 *.env.local
 Tenex Engineering Take Home Test.pdf
 plan.md
-
+design_handoff_tenex_console
 # Python
 __pycache__/
 *.pyc

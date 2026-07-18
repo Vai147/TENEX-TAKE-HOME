@@ -1,7 +1,8 @@
 """Pydantic request/response schemas."""
+import json
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class Token(BaseModel):
@@ -103,3 +104,47 @@ class UploadDetail(BaseModel):
     summary: SummaryOut
     entries: list[LogEntryOut]
     findings: list[AnomalyFindingOut]
+
+
+class IocEnrichmentOut(BaseModel):
+    """One VirusTotal verdict for one indicator seen in an upload."""
+    id: int
+    entry_id: int | None
+    indicator_type: str
+    indicator: str
+    status: str  # ok | not_found | unavailable
+    malicious: int
+    suspicious: int
+    harmless: int
+    undetected: int
+    reputation: int
+    threat_labels: list[str] = []
+    vt_link: str | None = None
+
+    model_config = {"from_attributes": True}
+
+    @field_validator("threat_labels", mode="before")
+    @classmethod
+    def _parse_labels(cls, value: object) -> list[str]:
+        # Stored as a JSON string column; hand the API a real list.
+        if value is None:
+            return []
+        if isinstance(value, str):
+            return json.loads(value) if value else []
+        return list(value)  # type: ignore[arg-type]
+
+
+class EnrichResultOut(BaseModel):
+    """Outcome of an enrichment run."""
+    indicators_seen: int
+    enriched: int
+    from_cache: int
+    unavailable: int
+    alerts: int
+
+
+class ThreatIntelOut(BaseModel):
+    """The Threat Intel tab payload."""
+    upload_id: int
+    enabled: bool  # whether VirusTotal is configured
+    enrichments: list[IocEnrichmentOut]

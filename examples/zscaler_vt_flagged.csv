@@ -1,0 +1,15 @@
+timestamp,user,src_ip,url,action,status,bytes_sent,bytes_recv,user_agent
+2026-07-14T08:58:12Z,alice@corp.com,10.0.4.21,https://mail.google.com/inbox,Allowed,200,1180,84120,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T09:01:47Z,bob@corp.com,10.0.4.22,https://docs.google.com/document/d/1a2b,Allowed,200,910,44210,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari/17.0
+2026-07-14T09:04:33Z,carol@corp.com,10.0.4.23,https://github.com/orgs/corp/repos,Allowed,200,1490,201884,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T09:12:05Z,dave@corp.com,10.0.4.24,https://s3.amazonaws.com/corp-backups,Allowed,200,2010,140220,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T11:41:18Z,dave@corp.com,10.0.4.24,https://malware.wicar.org/data/eicar.com,Blocked,403,540,0,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T11:41:52Z,dave@corp.com,10.0.4.24,https://malware.wicar.org/data/eicar.com,Blocked,403,540,0,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T11:42:29Z,dave@corp.com,10.0.4.24,https://malware.wicar.org/data/eicar.com,Blocked,403,540,0,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T11:47:03Z,dave@corp.com,10.0.4.24,https://secure.eicar.org/eicar.com.txt,Blocked,403,488,0,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T11:47:41Z,dave@corp.com,10.0.4.24,https://secure.eicar.org/eicar.com.txt,Blocked,403,488,0,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T11:53:16Z,dave@corp.com,10.0.4.24,https://testsafebrowsing.appspot.com/s/malware.html,Blocked,403,402,0,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T11:58:44Z,dave@corp.com,10.0.4.24,https://ianfette.org/,Blocked,403,360,0,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T12:05:09Z,eve@corp.com,10.0.4.25,https://outlook.office365.com,Allowed,200,1090,86140,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0
+2026-07-14T12:11:37Z,carol@corp.com,10.0.4.23,https://pypi.org/project/requests,Allowed,200,670,44880,Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+2026-07-14T13:20:55Z,alice@corp.com,10.0.4.21,https://mail.google.com/inbox,Allowed,200,1210,88970,Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0

@@ -2,10 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: dark;
+body {
+  @apply bg-canvas font-sans text-ink-primary antialiased;
 }
 
-body {
-  @apply bg-surface text-slate-100 antialiased;
+::selection {
+  background: #dbe7ff;
+  color: #1f2733;
 }

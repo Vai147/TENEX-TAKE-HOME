@@ -136,6 +136,92 @@ export async function getAnomalies(id: number): Promise<AnomaliesOut> {
   return authedJson<AnomaliesOut>(`/api/uploads/${id}/anomalies`);
 }
 
+// ---- VirusTotal threat-intel enrichment ----
+export interface IocEnrichmentOut {
+  id: number;
+  entry_id: number | null;
+  indicator_type: string; // url | domain | ip
+  indicator: string;
+  status: string; // ok | not_found | unavailable
+  malicious: number;
+  suspicious: number;
+  harmless: number;
+  undetected: number;
+  reputation: number;
+  threat_labels: string[];
+  vt_link: string | null;
+}
+
+export interface ThreatIntelOut {
+  upload_id: number;
+  enabled: boolean; // whether VirusTotal is configured on the backend
+  enrichments: IocEnrichmentOut[];
+}
+
+export interface EnrichResultOut {
+  indicators_seen: number;
+  enriched: number;
+  from_cache: number;
+  unavailable: number;
+  alerts: number;
+}
+
+export async function getThreatIntel(id: number): Promise<ThreatIntelOut> {
+  return authedJson<ThreatIntelOut>(`/api/uploads/${id}/threat-intel`);
+}
+
+export async function runEnrichment(id: number): Promise<EnrichResultOut> {
+  return authedJson<EnrichResultOut>(`/api/uploads/${id}/enrich`, {
+    method: "POST",
+  });
+}
+
+/** Fetch the SIEM export as text. The endpoint is auth-guarded, so this goes
+ *  through the bearer header rather than a bare link the browser can't authorize;
+ *  the caller turns the text into a download. */
+export async function fetchAlertsExport(
+  id: number,
+  format: "json" | "cef",
+): Promise<string> {
+  const token = getToken();
+  if (!token) throw new Error("Not authenticated");
+  const res = await fetch(`${API_BASE}/api/uploads/${id}/alerts?format=${format}`, {
+    headers: authHeaders(token),
+  });
+  if (res.status === 401) {
+    clearToken();
+    throw new Error("Session expired");
+  }
+  if (!res.ok) throw new Error(`Export failed (${res.status})`);
+  return format === "json" ? JSON.stringify(await res.json(), null, 2) : await res.text();
+}
+
+export interface ChatContext {
+  totalEntries: number;
+  flaggedCount: number;
+  findingCount: number;
+  narrative: string | null;
+}
+
+// "Ask Claude" chat.
+//
+// The backend has no chat endpoint yet — the planned route is
+// POST /api/uploads/{id}/chat, calling the LLM layer with the analysis as
+// context (see the handoff decision). Until then this is a context-aware stub so
+// the panel is fully wired; swapping in the real request is a one-function change
+// here, with the UI untouched.
+export async function sendChatMessage(
+  _uploadId: number,
+  message: string,
+  context: ChatContext | null,
+): Promise<string> {
+  await new Promise((resolve) => setTimeout(resolve, 350));
+  const scope = context
+    ? `${context.totalEntries.toLocaleString()} entries, ${context.flaggedCount} flagged, ${context.findingCount} findings`
+    : "no analysis loaded yet";
+  return `[chat backend pending] I'd answer using this upload's analysis (${scope}). You asked: "${message}"`;
+}
+
 // Exchange username/password for a JWT. Backend expects OAuth2 form encoding.
 export async function login(
   username: string,

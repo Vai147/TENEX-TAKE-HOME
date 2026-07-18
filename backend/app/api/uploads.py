@@ -2,13 +2,22 @@
 import json
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.config import get_settings
 from app.db import get_db
+from app.enrich.service import VtNotConfigured, enrich_upload, get_enrichments
+from app.enrich.siem import to_cef_alerts, to_json_alerts
 from app.models import AnalysisSummary, AnomalyFinding, LogEntry, Upload, User
-from app.schemas import AnomaliesOut, UploadDetail, UploadOut
+from app.schemas import (
+    AnomaliesOut,
+    EnrichResultOut,
+    ThreatIntelOut,
+    UploadDetail,
+    UploadOut,
+)
 from app.service import process_upload
 
 settings = get_settings()
@@ -157,3 +166,54 @@ def get_anomalies(
             json.loads(summary.top_talkers_json) if summary and summary.top_talkers_json else []
         ),
     )
+
+
+@router.post("/{upload_id}/enrich", response_model=EnrichResultOut)
+def run_enrichment(
+    upload_id: int,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user),
+) -> EnrichResultOut:
+    """Look up this upload's destination indicators against VirusTotal, store the
+    verdicts, and raise `virustotal`-sourced findings for the malicious ones.
+
+    On-demand and idempotent: a re-run replaces the prior results. Returns 503 when
+    no VirusTotal key is configured, so the UI can offer the action conditionally.
+    """
+    upload = _owned_upload(db, upload_id, current)
+    try:
+        result = enrich_upload(db, upload)
+    except VtNotConfigured as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    return EnrichResultOut(**result.__dict__)
+
+
+@router.get("/{upload_id}/threat-intel", response_model=ThreatIntelOut)
+def get_threat_intel(
+    upload_id: int,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user),
+) -> ThreatIntelOut:
+    """Stored VirusTotal enrichments for the Threat Intel tab. `enabled` tells the
+    UI whether the enrich action is available at all."""
+    _owned_upload(db, upload_id, current)
+    return ThreatIntelOut(
+        upload_id=upload_id,
+        enabled=settings.virustotal_enabled,
+        enrichments=get_enrichments(db, upload_id),
+    )
+
+
+@router.get("/{upload_id}/alerts")
+def export_alerts(
+    upload_id: int,
+    format: str = Query("json", pattern="^(json|cef)$"),
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user),
+):
+    """SIEM export of the malicious/suspicious indicators — JSON or CEF."""
+    _owned_upload(db, upload_id, current)
+    rows = get_enrichments(db, upload_id)
+    if format == "cef":
+        return PlainTextResponse(to_cef_alerts(rows), media_type="text/plain")
+    return {"upload_id": upload_id, "alerts": to_json_alerts(rows)}

@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { ConsoleHeader } from "@/components/layout/ConsoleHeader";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { login, setToken } from "@/lib/api";
 
 export default function LoginPage() {
@@ -28,52 +30,70 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
-      <p className="mb-2 text-sm font-medium uppercase tracking-widest text-accent">
-        Tenex · SOC
-      </p>
-      <h1 className="mb-6 text-3xl font-semibold">Log in</h1>
+    <div className="flex min-h-screen flex-col">
+      <ConsoleHeader variant="login" />
 
-      <form onSubmit={onSubmit} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="text-slate-400">Username</span>
-          <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoComplete="username"
-            className="rounded-lg border border-slate-700 bg-panel px-3 py-2.5 outline-none focus:border-accent"
-          />
-        </label>
+      <main className="flex flex-1 items-center justify-center px-6 py-12">
+        <div className="w-[400px] max-w-full rounded-xl border border-border bg-surface shadow-card">
+          <form onSubmit={onSubmit} className="flex flex-col gap-[18px] p-8">
+            <div>
+              <p className="text-[12px] font-medium tracking-[0.02em] text-ink-muted">
+                Sign in to continue
+              </p>
+              <h1 className="mt-1.5 text-[22px] font-semibold text-ink-primary">
+                Tenex Console
+              </h1>
+            </div>
 
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="text-slate-400">Password</span>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            className="rounded-lg border border-slate-700 bg-panel px-3 py-2.5 outline-none focus:border-accent"
-          />
-        </label>
+            <Field label="Username">
+              <input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                className={INPUT_CLASS}
+              />
+            </Field>
 
-        {error && (
-          <p className="rounded-lg bg-red-950/60 px-3 py-2 text-sm text-red-300">
-            {error}
-          </p>
-        )}
+            <Field label="Password">
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                className={INPUT_CLASS}
+              />
+            </Field>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="mt-2 rounded-lg bg-accent px-5 py-2.5 font-medium text-surface transition hover:opacity-90 disabled:opacity-50"
-        >
-          {loading ? "Signing in…" : "Sign in"}
-        </button>
-      </form>
+            {error && <ErrorBanner>{error}</ErrorBanner>}
 
-      <p className="mt-6 text-xs text-slate-500">
-        Prototype seed login — see <code>.env.example</code>.
-      </p>
-    </main>
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-0.5 rounded-lg bg-accent py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-70"
+            >
+              {loading ? "Signing in…" : "Sign in"}
+            </button>
+          </form>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+const INPUT_CLASS =
+  "rounded-lg border border-border-strong bg-surface px-3 py-2.5 text-[14px] text-ink-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/15";
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-[12px] font-medium text-ink-secondary">{label}</span>
+      {children}
+    </label>
   );
 }

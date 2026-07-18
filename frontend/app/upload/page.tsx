@@ -3,6 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { AskClaude } from "@/components/chat/AskClaude";
+import { ConsoleHeader } from "@/components/layout/ConsoleHeader";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { getToken, uploadFile } from "@/lib/api";
 
 export default function UploadPage() {
@@ -30,58 +33,78 @@ export default function UploadPage() {
     }
   }
 
+  const zoneActive = dragOver || file !== null;
+
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center px-6">
-      <p className="mb-2 text-sm font-medium uppercase tracking-widest text-accent">
-        Tenex · SOC
-      </p>
-      <h1 className="mb-6 text-3xl font-semibold">Upload a log file</h1>
+    <div className="flex min-h-screen flex-col">
+      <ConsoleHeader variant="app" />
 
-      <label
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragOver(true);
-        }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragOver(false);
-          const dropped = e.dataTransfer.files?.[0];
-          if (dropped) setFile(dropped);
-        }}
-        className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-14 text-center transition ${
-          dragOver ? "border-accent bg-panel" : "border-slate-700 bg-panel/50"
-        }`}
-      >
-        <input
-          type="file"
-          accept=".log,.txt,.csv"
-          className="hidden"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-        />
-        <span className="text-slate-300">
-          {file ? file.name : "Drag a .log / .txt / .csv file here, or click to browse"}
-        </span>
-        {file && (
-          <span className="mt-1 text-xs text-slate-500">
-            {(file.size / 1024).toFixed(1)} KB
-          </span>
-        )}
-      </label>
+      <main className="flex flex-1 items-center justify-center px-6 py-12">
+        <div className="flex w-[560px] max-w-full flex-col gap-4">
+          <div>
+            <p className="text-[12px] font-medium text-ink-muted">Ingest</p>
+            <h1 className="mt-1 text-[22px] font-semibold text-ink-primary">
+              Upload a log file
+            </h1>
+          </div>
 
-      {error && (
-        <p className="mt-4 rounded-lg bg-red-950/60 px-3 py-2 text-sm text-red-300">
-          {error}
-        </p>
-      )}
+          <label
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOver(false);
+              const dropped = e.dataTransfer.files?.[0];
+              if (dropped) {
+                setFile(dropped);
+                setError(null);
+              }
+            }}
+            className={`flex cursor-pointer flex-col items-center gap-3 rounded-xl border border-dashed px-6 py-[52px] text-center transition-colors hover:border-accent hover:bg-[#fbfcff] ${
+              zoneActive ? "border-accent bg-[#fbfcff]" : "border-border-strong bg-surface"
+            }`}
+          >
+            <input
+              type="file"
+              accept=".log,.txt,.csv"
+              className="hidden"
+              onChange={(e) => {
+                setFile(e.target.files?.[0] ?? null);
+                setError(null);
+              }}
+            />
+            <span
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-accent-soft text-[26px] font-normal leading-none text-accent"
+              aria-hidden="true"
+            >
+              +
+            </span>
+            <span className="text-[14px] text-ink-secondary">
+              {file ? file.name : "Drag a log file here, or click to browse"}
+            </span>
+            <span className="font-mono text-[12px] text-ink-faint">
+              .log · .txt · .csv
+            </span>
+          </label>
 
-      <button
-        onClick={submit}
-        disabled={!file || loading}
-        className="mt-6 rounded-lg bg-accent px-5 py-2.5 font-medium text-surface transition hover:opacity-90 disabled:opacity-40"
-      >
-        {loading ? "Analyzing…" : "Upload & analyze"}
-      </button>
-    </main>
+          {error && <ErrorBanner>{error}</ErrorBanner>}
+
+          <button
+            onClick={submit}
+            disabled={!file || loading}
+            className={`rounded-lg py-3 text-[14px] font-semibold text-white transition-colors ${
+              file ? "bg-accent hover:bg-accent-hover" : "bg-ink-disabled"
+            } disabled:cursor-not-allowed`}
+          >
+            {loading ? "Analyzing…" : "Upload & analyze"}
+          </button>
+        </div>
+      </main>
+
+      <AskClaude />
+    </div>
   );
 }

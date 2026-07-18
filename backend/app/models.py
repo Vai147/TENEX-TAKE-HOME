@@ -86,6 +86,42 @@ class AnomalyFinding(Base):
     upload: Mapped["Upload"] = relationship(back_populates="findings")
 
 
+class IocEnrichment(Base):
+    """One VirusTotal verdict for one indicator (URL / domain / IP) seen in an upload.
+
+    Doubles as the network cache: before calling VirusTotal for an indicator, the
+    service looks for a recent row with the same `indicator_type` + `indicator`
+    (across any upload) and reuses it, so repeat destinations never re-spend the
+    free-tier quota. `status` records how the lookup went so a VT outage is
+    distinguishable from a genuinely unknown indicator — never overwritten as a
+    clean verdict.
+    """
+
+    __tablename__ = "ioc_enrichments"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    upload_id: Mapped[int] = mapped_column(ForeignKey("uploads.id"), index=True)
+    # A representative entry the indicator came from, for cross-linking in the UI.
+    entry_id: Mapped[int | None] = mapped_column(ForeignKey("log_entries.id"), nullable=True)
+
+    indicator_type: Mapped[str] = mapped_column(String(16))  # url | domain | ip
+    indicator: Mapped[str] = mapped_column(Text, index=True)
+
+    # ok | unavailable | not_found — see docstring.
+    status: Mapped[str] = mapped_column(String(16), default="ok")
+
+    malicious: Mapped[int] = mapped_column(Integer, default=0)
+    suspicious: Mapped[int] = mapped_column(Integer, default=0)
+    harmless: Mapped[int] = mapped_column(Integer, default=0)
+    undetected: Mapped[int] = mapped_column(Integer, default=0)
+    reputation: Mapped[int] = mapped_column(Integer, default=0)
+    # JSON-encoded list[str] of popular threat classification labels.
+    threat_labels: Mapped[str | None] = mapped_column(Text, nullable=True)
+    vt_link: Mapped[str | None] = mapped_column(String(512), nullable=True)
+
+    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
 class AnalysisSummary(Base):
     __tablename__ = "analysis_summary"
 
