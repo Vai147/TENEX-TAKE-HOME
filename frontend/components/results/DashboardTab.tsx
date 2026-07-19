@@ -16,10 +16,14 @@ import {
 
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { fetchAttackLayer, type AnomaliesOut, type LogEntryOut } from "@/lib/api";
-import { buildTacticSlices, type TacticSlice } from "@/lib/attack";
+import {
+  buildTechniqueCells,
+  TACTIC_ORDER,
+  type TechniqueCell,
+} from "@/lib/attack";
 import { deriveBreakdowns, orNotLoaded, type Breakdowns } from "@/lib/breakdowns";
 import { detectorLabel, formatHour, formatNumber } from "@/lib/format";
-import { CHART_INK, PIE_PALETTES, SERIES } from "@/lib/palette";
+import { CHART_INK, PIE_PALETTES, SERIES, SEVERITY_HEX } from "@/lib/palette";
 import { SEVERITY_ORDER } from "@/lib/severity";
 
 // Detector display order for the donut, matching the prototype.
@@ -51,9 +55,13 @@ export function DashboardTab({ analysis, entries }: DashboardTabProps) {
   const totalFindings = analysis.findings.length;
   const detSummary = `${totalFindings} findings across ${detectors.length} detector${detectors.length === 1 ? "" : "s"}`;
 
-  const tactics = useMemo(() => buildTacticSlices(analysis.findings), [analysis.findings]);
-  const mappedCount = tactics.reduce((sum, t) => sum + t.count, 0);
-  const attackSummary = `${tactics.length} ATT&CK tactic${tactics.length === 1 ? "" : "s"} across the kill chain`;
+  const techniques = useMemo(
+    () => buildTechniqueCells(analysis.findings),
+    [analysis.findings],
+  );
+  const mappedCount = techniques.reduce((sum, technique) => sum + technique.count, 0);
+  const unmappedCount = analysis.findings.length - mappedCount;
+  const attackSummary = `${techniques.length} observed technique${techniques.length === 1 ? "" : "s"} · ${mappedCount} mapped finding${mappedCount === 1 ? "" : "s"}`;
 
   return (
     <div className="flex flex-col gap-5">
@@ -84,150 +92,150 @@ export function DashboardTab({ analysis, entries }: DashboardTabProps) {
       </div>
 
       <Card>
-        <CardHead
-          title="Findings by ATT&CK tactic"
-          sub={`${attackSummary} — hover a slice for techniques and hosts`}
-        />
-        <AttackDonut
-          tactics={tactics}
-          total={mappedCount}
-          breakdowns={breakdowns}
-          onOpenAlerts={() => router.push(`/uploads/${uploadId}/alerts`)}
-        />
-        <NavigatorDownload uploadId={uploadId} disabled={mappedCount === 0} />
+        <CardHead title="Top source IPs" sub="busiest talkers, allowed vs blocked" />
+        <TopTalkers topTalkers={analysis.top_talkers} breakdowns={breakdowns} />
       </Card>
 
       <Card>
-        <CardHead title="Top source IPs" sub="busiest talkers, allowed vs blocked" />
-        <TopTalkers topTalkers={analysis.top_talkers} breakdowns={breakdowns} />
+        <CardHead
+          title="MITRE ATT&CK Matrix"
+          sub={`${attackSummary} — observed techniques are highlighted by highest severity`}
+        />
+        <AttackMatrix
+          techniques={techniques}
+          breakdowns={breakdowns}
+          onOpenAlerts={() => router.push(`/uploads/${uploadId}/alerts`)}
+        />
+        {unmappedCount > 0 && (
+          <p className="mt-3 text-[11px] text-ink-faint">
+            {unmappedCount} behavioural finding{unmappedCount === 1 ? "" : "s"} not mapped to ATT&amp;CK.
+          </p>
+        )}
+        <NavigatorDownload uploadId={uploadId} disabled={mappedCount === 0} />
       </Card>
     </div>
   );
 }
 
-// ---- ATT&CK tactic donut ----
+// ---- Compact ATT&CK matrix ----
 
-function tacticIps(slice: TacticSlice, breakdowns: Breakdowns): string[] {
+function techniqueIps(technique: TechniqueCell, breakdowns: Breakdowns): string[] {
   const ips = new Set<string>();
-  for (const type of slice.types) {
+  for (const type of technique.types) {
     for (const ip of breakdowns.detectorIps.get(type) ?? []) ips.add(ip);
   }
   return [...ips];
 }
 
-function AttackDonut({
-  tactics,
-  total,
+function AttackMatrix({
+  techniques,
   breakdowns,
   onOpenAlerts,
 }: {
-  tactics: TacticSlice[];
-  total: number;
+  techniques: TechniqueCell[];
   breakdowns: Breakdowns;
   onOpenAlerts: () => void;
 }) {
-  const reduced = useReducedMotion();
-  const [hover, setHover] = useState<string | null>(null);
-  const active = tactics.find((t) => t.tactic === hover) ?? null;
-
-  if (tactics.length === 0) {
+  if (techniques.length === 0) {
     return (
-      <p className="py-12 text-center text-[13px] text-ink-muted">
-        No findings to map onto ATT&CK yet.
+      <p className="mt-5 py-8 text-center text-[13px] text-ink-muted">
+        No findings in this log mapped to an ATT&amp;CK technique.
       </p>
     );
   }
 
+  // The whole ATT&CK kill chain is shown as columns for coverage context, but
+  // every technique cell still comes from the log: tactics with no findings get
+  // an empty placeholder rather than reference technique names.
+  const byTactic = new Map<string, TechniqueCell[]>();
+  for (const technique of techniques) {
+    const cells = byTactic.get(technique.tactic) ?? [];
+    cells.push(technique);
+    byTactic.set(technique.tactic, cells);
+  }
+
   return (
-    <div className="mt-[22px] flex flex-wrap items-center gap-6">
-      <div className="relative h-[150px] w-[150px] flex-none">
-        <PieChart width={150} height={150}>
-          <Pie
-            data={tactics}
-            dataKey="count"
-            nameKey="tactic"
-            cx="50%"
-            cy="50%"
-            innerRadius={43}
-            outerRadius={75}
-            stroke="none"
-            isAnimationActive={!reduced}
-            onMouseLeave={() => setHover(null)}
-          >
-            {tactics.map((t) => (
-              <Cell
-                key={t.tactic}
-                fill={t.color}
-                fillOpacity={hover === null || hover === t.tactic ? 1 : 0.3}
-                style={{ cursor: "pointer", transition: "fill-opacity 0.15s" }}
-                onMouseEnter={() => setHover(t.tactic)}
-                onClick={onOpenAlerts}
-              />
-            ))}
-          </Pie>
-        </PieChart>
-
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-mono text-[22px] font-semibold text-ink-primary">
-            {total}
-          </span>
-          <span className="text-[10px] tracking-[0.04em] text-ink-faint">findings</span>
-        </div>
-
-        {active && (
-          <div
-            className="pointer-events-none absolute left-[calc(100%+14px)] top-1/2 z-30 flex w-[240px] -translate-y-1/2 flex-col gap-1.5 rounded-lg border border-border bg-surface p-3 shadow-popover"
-            style={{ borderTop: `2px solid ${active.color}` }}
-          >
-            <span
-              className="text-[10px] font-semibold tracking-[0.04em]"
-              style={{ color: active.color }}
+    <div className="mt-5 overflow-x-auto pb-2">
+      <div
+        className="grid min-w-[2180px] gap-1"
+        style={{ gridTemplateColumns: `repeat(${TACTIC_ORDER.length}, minmax(150px, 1fr))` }}
+      >
+        {TACTIC_ORDER.map((tactic) => {
+          const cells = byTactic.get(tactic) ?? [];
+          const active = cells.length > 0;
+          return (
+          <div key={tactic} className="flex min-w-0 flex-col gap-1">
+            <div
+              className="flex min-h-[42px] items-center justify-center rounded-sm px-2 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.03em] text-white"
+              style={{ backgroundColor: "#343b5b", opacity: active ? 1 : 0.5 }}
             >
-              {active.tactic} · {active.count} findings
-            </span>
-            <span className="text-[10px] font-medium text-ink-faint">Techniques</span>
-            {active.techniques.length > 0 ? (
-              active.techniques.map((technique, i) => (
-                <span key={i} className="font-mono text-[11px] leading-relaxed text-[#475467]">
-                  • {technique}
-                </span>
-              ))
-            ) : (
-              <span className="text-[11px] leading-relaxed text-[#475467]">
-                behavioural signal — no ATT&CK technique
-              </span>
+              {tactic}
+            </div>
+
+            {cells.map((technique) => {
+              const color = SEVERITY_HEX[technique.severity];
+              const ips = orNotLoaded(techniqueIps(technique, breakdowns));
+
+              return (
+                <button
+                  type="button"
+                  key={technique.techniqueId}
+                  onClick={onOpenAlerts}
+                  className="min-h-[76px] rounded-sm border bg-card px-2 py-2 text-left shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  style={{
+                    // Translucent severity wash layers over the card in either
+                    // theme, instead of a fixed light fill.
+                    backgroundImage: `linear-gradient(0deg, color-mix(in srgb, ${color} 14%, transparent), color-mix(in srgb, ${color} 14%, transparent))`,
+                    borderColor: color,
+                    borderTopWidth: 4,
+                  }}
+                  title={`${technique.count} finding${technique.count === 1 ? "" : "s"}; source IPs: ${ips.join(", ")}`}
+                >
+                  <span className="flex items-start justify-between gap-1">
+                    <span className="font-mono text-[9px] font-semibold" style={{ color }}>
+                      {technique.techniqueId}
+                    </span>
+                    <span
+                      className="rounded-full px-2 py-0.5 font-mono text-[10px] font-semibold text-white"
+                      style={{ backgroundColor: color }}
+                    >
+                      {technique.count}
+                    </span>
+                  </span>
+                  <span className="mt-1.5 block text-[10px] font-semibold leading-snug text-foreground">
+                    {technique.techniqueName}
+                  </span>
+                  <span className="mt-1.5 block truncate font-mono text-[8px] text-muted-foreground">
+                    {ips.join(", ")}
+                  </span>
+                </button>
+              );
+            })}
+
+            {!active && (
+              <div className="flex min-h-[76px] items-center justify-center rounded-sm border border-dashed border-border bg-muted/20 text-[11px] text-muted-foreground">
+                —
+              </div>
             )}
-            <span className="mt-0.5 text-[10px] font-medium text-ink-faint">Source IPs</span>
-            {orNotLoaded(tacticIps(active, breakdowns)).map((ip, i) => (
-              <span key={i} className="font-mono text-[11px] leading-relaxed text-[#475467]">
-                • {ip}
-              </span>
-            ))}
-            <span className="mt-0.5 text-[10px] text-ink-faint">click slice to open alerts</span>
           </div>
-        )}
+          );
+        })}
       </div>
 
-      <ul className="flex min-w-[200px] flex-1 flex-col gap-2">
-        {tactics.map((t) => (
-          <li key={t.tactic} className="flex items-center gap-2 text-[12px]">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-divider pt-3 text-[10px] text-ink-faint">
+        <span>Badge = finding count</span>
+        {SEVERITY_ORDER.map((severity) => (
+          <span key={severity} className="inline-flex items-center gap-1 capitalize">
             <span
-              className="h-2 w-2 flex-none rounded-[2px]"
-              style={{ background: t.color }}
+              className="h-2 w-2 rounded-[2px]"
+              style={{ backgroundColor: SEVERITY_HEX[severity] }}
               aria-hidden="true"
             />
-            <span className="text-ink-secondary">{t.tactic}</span>
-            {t.techniques[0] && (
-              <span className="font-mono text-[10px] text-ink-faint">
-                {t.techniques[0].split(" ")[0]}
-              </span>
-            )}
-            <span className="ml-auto font-mono font-semibold text-ink-primary">
-              {t.count}
-            </span>
-          </li>
+            {severity}
+          </span>
         ))}
-      </ul>
+        <span className="ml-auto">Select a cell to open alerts</span>
+      </div>
     </div>
   );
 }

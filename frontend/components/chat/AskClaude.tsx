@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { sendChatMessage, type ChatContext, type ChatTurn } from "@/lib/api";
 
 interface ChatMessage {
@@ -62,17 +64,15 @@ export function AskClaude({ uploadId, context = null }: AskClaudeProps) {
   return (
     <>
       {open && (
-        <div className="fixed bottom-[84px] right-6 z-20 flex h-[440px] w-[360px] max-w-[calc(100vw-48px)] flex-col rounded-xl border border-border bg-surface shadow-panel">
-          <div className="flex items-center gap-2 border-b border-divider px-4 py-3">
+        <div className="fixed bottom-[84px] right-6 z-20 flex h-[440px] w-[360px] max-w-[calc(100vw-48px)] flex-col rounded-xl border bg-card text-card-foreground shadow-panel">
+          <div className="flex items-center gap-2 border-b px-4 py-3">
             <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />
-            <span className="text-[12px] font-semibold text-ink-primary">
-              Ask Claude
-            </span>
+            <span className="text-xs font-semibold text-foreground">Ask Claude</span>
             <button
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close chat"
-              className="ml-auto text-[18px] leading-none text-ink-faint transition-colors hover:text-ink-primary"
+              className="ml-auto text-[18px] leading-none text-muted-foreground transition-colors hover:text-foreground"
             >
               ×
             </button>
@@ -87,23 +87,16 @@ export function AskClaude({ uploadId, context = null }: AskClaudeProps) {
             ))}
           </div>
 
-          <form
-            onSubmit={onSubmit}
-            className="flex gap-2 border-t border-divider p-3"
-          >
-            <input
+          <form onSubmit={onSubmit} className="flex gap-2 border-t p-3">
+            <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="ask about this analysis…"
-              className="flex-1 rounded-lg border border-border-strong bg-surface px-2.5 py-2 text-[12px] text-ink-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/15"
+              className="flex-1"
             />
-            <button
-              type="submit"
-              disabled={sending}
-              className="rounded-lg bg-accent px-4 text-[13px] font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-60"
-            >
+            <Button type="submit" disabled={sending}>
               Send
-            </button>
+            </Button>
           </form>
         </div>
       )}
@@ -112,9 +105,9 @@ export function AskClaude({ uploadId, context = null }: AskClaudeProps) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="fixed bottom-6 right-6 z-20 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-3 text-[13px] font-semibold text-white shadow-fab transition-colors hover:bg-accent-hover"
+        className="fixed bottom-6 right-6 z-20 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-3 text-[13px] font-semibold text-accent-foreground shadow-fab transition-colors hover:bg-accent-hover dark:bg-[#1d4ed8] dark:hover:bg-[#1e40af]"
       >
-        <span className="h-[7px] w-[7px] rounded-full bg-white" aria-hidden="true" />
+        <span className="h-[7px] w-[7px] rounded-full bg-current" aria-hidden="true" />
         Ask Claude
       </button>
     </>
@@ -128,17 +121,17 @@ function Bubble({ msg }: { msg: ChatMessage }) {
       className={`max-w-[85%] rounded-[10px] border px-3 py-2.5 ${
         isClaude
           ? "self-start border-accent-soft-border bg-accent-soft"
-          : "self-end border-divider bg-surface-alt"
+          : "self-end bg-muted"
       }`}
     >
       <p
         className={`text-[9px] font-semibold tracking-[0.06em] ${
-          isClaude ? "text-accent" : "text-ink-muted"
+          isClaude ? "text-accent" : "text-muted-foreground"
         }`}
       >
         {isClaude ? "CLAUDE" : "YOU"}
       </p>
-      <p className="mt-1.5 whitespace-pre-line text-[12px] leading-relaxed text-ink-secondary">
+      <p className="mt-1.5 whitespace-pre-line text-[12px] leading-relaxed text-foreground/80">
         {msg.text}
       </p>
     </div>

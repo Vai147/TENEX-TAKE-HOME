@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { clearToken } from "@/lib/api";
 import { RESULT_TABS, type ResultTab } from "@/lib/tabs";
 
@@ -40,22 +42,21 @@ export function ConsoleHeader({ variant, uploadId, activeTab }: ConsoleHeaderPro
         : "/upload";
 
   return (
-    <header className="border-b border-border bg-surface">
+    <header className="border-b bg-card text-card-foreground">
       <div className="flex h-14 items-center gap-4 px-7">
         <Logo href={logoHref} />
 
-        {variant === "app" && (
-          <span className="ml-auto inline-flex items-center gap-3.5">
-            <span className="text-[13px] text-ink-muted">analyst@tenex</span>
-            <button
-              type="button"
-              onClick={logout}
-              className="rounded-md border border-border-strong px-3 py-1.5 text-[12px] font-medium text-ink-secondary transition-colors hover:border-ink-faint hover:bg-canvas"
-            >
-              Log out
-            </button>
-          </span>
-        )}
+        <div className="ml-auto flex items-center gap-3">
+          {variant === "app" && (
+            <>
+              <span className="text-[13px] text-muted-foreground">analyst@tenex</span>
+              <Button variant="outline" size="sm" onClick={logout}>
+                Log out
+              </Button>
+            </>
+          )}
+          <ThemeToggle />
+        </div>
       </div>
 
       {variant === "app" && uploadId !== undefined && (
@@ -68,10 +69,10 @@ export function ConsoleHeader({ variant, uploadId, activeTab }: ConsoleHeaderPro
 function Logo({ href }: { href?: string }) {
   const inner = (
     <>
-      <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-accent text-[13px] font-bold text-white">
+      <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-accent text-[13px] font-bold text-accent-foreground dark:bg-[#1d4ed8]">
         T
       </span>
-      <span className="text-[15px] font-semibold tracking-[0.01em] text-ink-primary">
+      <span className="text-[15px] font-semibold tracking-[0.01em] text-foreground">
         Tenex Console
       </span>
     </>
@@ -113,7 +114,7 @@ function TabNav({
             className={`-mb-px border-b-2 px-3.5 py-3 text-[13px] font-medium transition-colors ${
               active
                 ? "border-accent text-accent"
-                : "border-transparent text-ink-secondary hover:text-ink-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             {TAB_LABELS[tab]}

@@ -2,6 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   fetchAlertsExport,
   getThreatIntel,
@@ -59,58 +68,53 @@ export function ThreatIntelTab({ uploadId }: ThreatIntelTabProps) {
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[12px] font-medium text-ink-muted">Threat Intel</p>
-          <h1 className="mt-1 text-[20px] font-semibold text-ink-primary">
+          <p className="text-xs font-medium uppercase tracking-[0.06em] text-muted-foreground">
+            Threat Intel
+          </p>
+          <h1 className="mt-1 text-xl font-semibold tracking-tight">
             VirusTotal reputation
           </h1>
         </div>
         {data?.enabled && (
           <div className="flex items-center gap-2">
             {hasResults && <ExportMenu uploadId={uploadId} />}
-            <button
-              type="button"
-              onClick={onEnrich}
-              disabled={enriching}
-              className="rounded-lg bg-accent px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-60"
-            >
+            <Button onClick={onEnrich} disabled={enriching}>
               {enriching
                 ? "Enriching…"
                 : hasResults
                   ? "Re-run VirusTotal"
                   : "Enrich with VirusTotal"}
-            </button>
+            </Button>
           </div>
         )}
       </div>
 
       {error && (
-        <p className="rounded-lg border border-error-border bg-error-bg px-3 py-2.5 text-[12px] text-error-text">
+        <p className="rounded-lg border border-error-border bg-error-bg px-3 py-2.5 text-xs text-error-text">
           {error}
         </p>
       )}
 
       {result && (
-        <p className="rounded-lg border border-border bg-surface px-4 py-2.5 text-[12px] text-ink-secondary">
-          Enriched <b className="font-mono text-ink-primary">{result.enriched}</b> of{" "}
-          <b className="font-mono text-ink-primary">{result.indicators_seen}</b> indicators
+        <p className="rounded-lg border bg-card px-4 py-2.5 text-xs text-muted-foreground">
+          Enriched <b className="font-mono text-foreground">{result.enriched}</b> of{" "}
+          <b className="font-mono text-foreground">{result.indicators_seen}</b> indicators
           {" · "}
-          <b className="font-mono text-ink-primary">{result.from_cache}</b> from cache
+          <b className="font-mono text-foreground">{result.from_cache}</b> from cache
           {" · "}
-          <b className="font-mono text-ink-primary">{result.alerts}</b> alert
+          <b className="font-mono text-foreground">{result.alerts}</b> alert
           {result.alerts === 1 ? "" : "s"}
           {result.unavailable > 0 && (
             <>
               {" · "}
-              <span className="text-ink-muted">
-                {result.unavailable} unreachable
-              </span>
+              <span className="text-muted-foreground">{result.unavailable} unreachable</span>
             </>
           )}
         </p>
       )}
 
       {loading ? (
-        <p className="py-8 text-[13px] text-ink-muted">Loading threat intel…</p>
+        <p className="py-8 text-[13px] text-muted-foreground">Loading threat intel…</p>
       ) : !data?.enabled ? (
         <NotConfigured />
       ) : !hasResults ? (
@@ -124,14 +128,12 @@ export function ThreatIntelTab({ uploadId }: ThreatIntelTabProps) {
 
 function NotConfigured() {
   return (
-    <div className="rounded-[10px] border border-dashed border-border bg-surface px-6 py-8 text-center">
-      <p className="text-[14px] font-medium text-ink-primary">
-        VirusTotal isn’t configured
-      </p>
-      <p className="mx-auto mt-1.5 max-w-[52ch] text-[13px] text-ink-muted">
-        Set <code className="font-mono text-ink-secondary">VIRUSTOTAL_API_KEY</code> on
-        the backend and restart it to enable destination reputation lookups and SIEM
-        alert export.
+    <div className="rounded-xl border border-dashed bg-card px-6 py-8 text-center">
+      <p className="text-sm font-medium text-foreground">VirusTotal isn’t configured</p>
+      <p className="mx-auto mt-1.5 max-w-[52ch] text-[13px] text-muted-foreground">
+        Set <code className="font-mono text-foreground">VIRUSTOTAL_API_KEY</code> on the
+        backend and restart it to enable destination reputation lookups and SIEM alert
+        export.
       </p>
     </div>
   );
@@ -139,12 +141,12 @@ function NotConfigured() {
 
 function EmptyState() {
   return (
-    <div className="rounded-[10px] border border-dashed border-border bg-surface px-6 py-8 text-center">
-      <p className="text-[14px] font-medium text-ink-primary">No enrichment yet</p>
-      <p className="mx-auto mt-1.5 max-w-[52ch] text-[13px] text-ink-muted">
+    <div className="rounded-xl border border-dashed bg-card px-6 py-8 text-center">
+      <p className="text-sm font-medium text-foreground">No enrichment yet</p>
+      <p className="mx-auto mt-1.5 max-w-[52ch] text-[13px] text-muted-foreground">
         Run VirusTotal to fetch reputation, detections, and threat labels for this
-        upload’s destination URLs, domains, and IPs. Malicious hits are raised as
-        alerts and marked in the log.
+        upload’s destination URLs, domains, and IPs. Malicious hits are raised as alerts
+        and marked in the log.
       </p>
     </div>
   );
@@ -173,35 +175,14 @@ function ExportMenu({ uploadId }: { uploadId: number }) {
 
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-[12px] text-ink-faint">SIEM export</span>
-      <ExportButton onClick={() => download("json")} disabled={busy}>
+      <span className="text-xs text-muted-foreground">SIEM export</span>
+      <Button variant="outline" size="sm" onClick={() => download("json")} disabled={busy}>
         JSON
-      </ExportButton>
-      <ExportButton onClick={() => download("cef")} disabled={busy}>
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => download("cef")} disabled={busy}>
         CEF
-      </ExportButton>
+      </Button>
     </div>
-  );
-}
-
-function ExportButton({
-  children,
-  onClick,
-  disabled,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  disabled: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="rounded-md border border-border-strong bg-surface px-2.5 py-1.5 text-[12px] font-medium text-ink-secondary transition-colors hover:border-ink-faint hover:bg-surface-alt disabled:opacity-50"
-    >
-      {children}
-    </button>
   );
 }
 
@@ -209,27 +190,27 @@ const TYPE_LABEL: Record<string, string> = { ip: "IP", domain: "Domain", url: "U
 
 function VerdictTable({ enrichments }: { enrichments: IocEnrichmentOut[] }) {
   return (
-    <div className="overflow-x-auto rounded-[10px] border border-border bg-surface">
-      <table className="w-full border-collapse text-[12px]">
-        <thead>
-          <tr className="bg-surface-alt text-left text-ink-muted">
-            <th className="w-6 px-3.5 py-[11px]" />
-            <Th>Indicator</Th>
-            <Th>Type</Th>
-            <Th className="text-right">Malicious</Th>
-            <Th className="text-right">Suspicious</Th>
-            <Th className="text-right">Harmless</Th>
-            <Th className="text-right">Reputation</Th>
-            <Th>Threat labels</Th>
-            <Th />
-          </tr>
-        </thead>
-        <tbody>
+    <div className="overflow-x-auto rounded-xl border bg-card">
+      <Table className="text-xs">
+        <TableHeader>
+          <TableRow className="bg-muted/40 hover:bg-muted/40">
+            <TableHead className="w-6" />
+            <TableHead>Indicator</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead className="text-right">Malicious</TableHead>
+            <TableHead className="text-right">Suspicious</TableHead>
+            <TableHead className="text-right">Harmless</TableHead>
+            <TableHead className="text-right">Reputation</TableHead>
+            <TableHead>Threat labels</TableHead>
+            <TableHead />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {enrichments.map((row) => (
             <VerdictRow key={row.id} row={row} />
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -240,11 +221,8 @@ function VerdictRow({ row }: { row: IocEnrichmentOut }) {
   const unreachable = row.status === "unavailable";
 
   return (
-    <tr
-      className="border-t border-divider align-middle"
-      style={flagged ? { background: "rgba(217,45,32,0.05)" } : undefined}
-    >
-      <td className="px-3.5 py-2.5">
+    <TableRow className={flagged ? "bg-destructive/[0.05] hover:bg-destructive/[0.08]" : undefined}>
+      <TableCell>
         {flagged && (
           <span
             className="block h-1.5 w-1.5 rounded-full"
@@ -253,19 +231,19 @@ function VerdictRow({ row }: { row: IocEnrichmentOut }) {
             <span className="sr-only">{severity} reputation</span>
           </span>
         )}
-      </td>
-      <td className="max-w-[320px] truncate px-3.5 py-2.5 font-mono text-ink-primary" title={row.indicator}>
+      </TableCell>
+      <TableCell className="max-w-[320px] truncate font-mono text-foreground" title={row.indicator}>
         {row.indicator}
-      </td>
-      <td className="px-3.5 py-2.5">
-        <span className="rounded border border-border px-1.5 py-px text-[10px] font-medium uppercase tracking-[0.04em] text-ink-muted">
+      </TableCell>
+      <TableCell>
+        <span className="rounded border px-1.5 py-px text-[10px] font-medium uppercase tracking-[0.04em] text-muted-foreground">
           {TYPE_LABEL[row.indicator_type] ?? row.indicator_type}
         </span>
-      </td>
+      </TableCell>
       {unreachable ? (
-        <td colSpan={4} className="px-3.5 py-2.5 text-ink-faint">
+        <TableCell colSpan={4} className="text-muted-foreground">
           unreachable — VirusTotal did not respond
-        </td>
+        </TableCell>
       ) : (
         <>
           <Num value={row.malicious} tone={row.malicious > 0 ? "danger" : "muted"} />
@@ -274,53 +252,49 @@ function VerdictRow({ row }: { row: IocEnrichmentOut }) {
           <Num value={row.reputation} tone="muted" />
         </>
       )}
-      <td className="px-3.5 py-2.5">
+      <TableCell>
         {row.threat_labels.length > 0 ? (
           <span className="flex flex-wrap gap-1">
             {row.threat_labels.slice(0, 3).map((label) => (
               <span
                 key={label}
-                className="rounded bg-surface-alt px-1.5 py-px font-mono text-[11px] text-ink-secondary"
+                className="rounded bg-muted px-1.5 py-px font-mono text-[11px] text-foreground/80"
               >
                 {label}
               </span>
             ))}
           </span>
         ) : (
-          <span className="text-ink-faint">—</span>
+          <span className="text-muted-foreground">—</span>
         )}
-      </td>
-      <td className="px-3.5 py-2.5 text-right">
+      </TableCell>
+      <TableCell className="text-right">
         {row.vt_link && (
           <a
             href={row.vt_link}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[12px] font-medium text-accent hover:underline"
+            className="text-xs font-medium text-accent hover:underline"
           >
             VT ↗
           </a>
         )}
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
-}
-
-function Th({ children, className = "" }: { children?: React.ReactNode; className?: string }) {
-  return <th className={`px-3.5 py-[11px] font-medium ${className}`}>{children}</th>;
 }
 
 const TONE: Record<string, string> = {
   danger: "text-danger font-semibold",
   warn: "text-sev-medium font-semibold",
-  muted: "text-ink-secondary",
+  muted: "text-muted-foreground",
 };
 
 function Num({ value, tone }: { value: number; tone: "danger" | "warn" | "muted" }) {
   return (
-    <td className={`px-3.5 py-2.5 text-right font-mono tabular-nums ${TONE[tone]}`}>
+    <TableCell className={`text-right font-mono tabular-nums ${TONE[tone]}`}>
       {value}
-    </td>
+    </TableCell>
   );
 }
 

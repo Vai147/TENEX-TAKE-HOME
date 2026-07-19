@@ -3,6 +3,7 @@ import json
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import JSONResponse, PlainTextResponse
+from sqlalchemy import String, cast, or_
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
@@ -101,11 +102,13 @@ def get_upload(
     upload_id: int,
     limit: int = Query(DEFAULT_ENTRY_LIMIT, ge=1, le=MAX_ENTRY_LIMIT),
     offset: int = Query(0, ge=0),
+    q: str | None = Query(None, max_length=200, description="Filter entries by src IP, user, URL, action, or status."),
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
 ) -> UploadDetail:
-    """One upload's analysis. Entries are paged; `summary.total_entries` is the true
-    total, and findings are already capped by the detection engine."""
+    """One upload's analysis. Entries are paged and optionally filtered by `q`;
+    `summary.total_entries` is the true unfiltered total, `entries_total` reflects
+    the current filter, and findings are already capped by the detection engine."""
     upload = _owned_upload(db, upload_id, current)
 
     summary = (
@@ -113,10 +116,26 @@ def get_upload(
         .filter(AnalysisSummary.upload_id == upload_id)
         .first()
     )
+
+    # Base query for this upload's rows; the optional text search is applied to
+    # both the page and its count so pagination stays consistent.
+    entry_query = db.query(LogEntry).filter(LogEntry.upload_id == upload_id)
+    term = (q or "").strip()
+    if term:
+        like = f"%{term}%"
+        entry_query = entry_query.filter(
+            or_(
+                LogEntry.src_ip.ilike(like),
+                LogEntry.user.ilike(like),
+                LogEntry.url.ilike(like),
+                LogEntry.action.ilike(like),
+                cast(LogEntry.status_code, String).ilike(like),
+            )
+        )
+
+    entries_total = entry_query.count()
     entries = (
-        db.query(LogEntry)
-        .filter(LogEntry.upload_id == upload_id)
-        .order_by(LogEntry.ts.asc().nullslast(), LogEntry.id.asc())
+        entry_query.order_by(LogEntry.ts.asc().nullslast(), LogEntry.id.asc())
         .offset(offset)
         .limit(limit)
         .all()
@@ -129,7 +148,11 @@ def get_upload(
     )
 
     return UploadDetail(
-        upload=upload, summary=summary, entries=entries, findings=findings
+        upload=upload,
+        summary=summary,
+        entries=entries,
+        findings=findings,
+        entries_total=entries_total,
     )
 
 

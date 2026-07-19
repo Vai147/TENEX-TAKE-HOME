@@ -57,6 +57,7 @@ function ResultsView() {
 
   const uploadId = Number(params.id);
   const page = pageFromQuery(searchParams.get("page"));
+  const query = searchParams.get("q") ?? "";
   const tab = tabFromParam(params.tab);
 
   const [analysis, setAnalysis] = useState<AnomaliesOut | null>(null);
@@ -100,7 +101,7 @@ function ResultsView() {
 
     let cancelled = false;
     setEntriesLoading(true);
-    getUpload(uploadId, { limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE })
+    getUpload(uploadId, { limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE, q: query })
       .then((data) => !cancelled && setDetail(data))
       .catch((err) => !cancelled && setError(errorMessage(err)))
       .finally(() => {
@@ -110,7 +111,7 @@ function ResultsView() {
     return () => {
       cancelled = true;
     };
-  }, [uploadId, page]);
+  }, [uploadId, page, query]);
 
   const goToPage = useCallback(
     (next: number) => {
@@ -126,11 +127,29 @@ function ResultsView() {
     [router, searchParams, uploadId, tab],
   );
 
+  // A new search resets to page 1 and rewrites `?q=` (dropping it when cleared),
+  // keeping the search shareable and refresh-safe.
+  const onSearch = useCallback(
+    (next: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      const term = next.trim();
+      if (term) params.set("q", term);
+      else params.delete("q");
+      params.delete("page");
+
+      const suffix = params.toString();
+      router.replace(`/uploads/${uploadId}/${tab}${suffix ? `?${suffix}` : ""}`, {
+        scroll: false,
+      });
+    },
+    [router, searchParams, uploadId, tab],
+  );
+
   // `?page=` is user-editable and can outlive the entries it pointed at, so the
-  // URL is corrected once the real total is known rather than trusted.
+  // URL is corrected once the real (filtered) total is known rather than trusted.
   useEffect(() => {
     if (!detail) return;
-    const lastPage = Math.max(1, Math.ceil(detail.summary.total_entries / PAGE_SIZE));
+    const lastPage = Math.max(1, Math.ceil(detail.entries_total / PAGE_SIZE));
     if (page > lastPage) goToPage(lastPage);
   }, [detail, page, goToPage]);
 
@@ -177,6 +196,8 @@ function ResultsView() {
             findings={findings}
             flagged={flagged}
             page={page}
+            query={query}
+            onSearch={onSearch}
             entriesLoading={entriesLoading}
             onPageChange={goToPage}
             error={error}
@@ -196,6 +217,8 @@ function ResultTabView({
   findings,
   flagged,
   page,
+  query,
+  onSearch,
   entriesLoading,
   onPageChange,
   error,
@@ -206,6 +229,8 @@ function ResultTabView({
   findings: AnomaliesOut["findings"];
   flagged: ReturnType<typeof worstSeverityByEntry>;
   page: number;
+  query: string;
+  onSearch: (q: string) => void;
   entriesLoading: boolean;
   onPageChange: (page: number) => void;
   error: string | null;
@@ -225,7 +250,9 @@ function ResultTabView({
           flagged={flagged}
           page={page}
           pageSize={PAGE_SIZE}
-          tableTotal={detail.summary.total_entries}
+          tableTotal={detail.entries_total}
+          query={query}
+          onSearch={onSearch}
           entriesLoading={entriesLoading}
           onPageChange={onPageChange}
           loadError={error}

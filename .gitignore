@@ -17,3 +17,7 @@ frontend/package-lock.json
 
 # OS
 .DS_Store
+
+# local backend runtime (sqlite + upload dir)
+_uploads/
+tenex_local.db

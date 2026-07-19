@@ -1,70 +1,96 @@
 // ATT&CK presentation helpers. The mapping itself is owned by the backend
 // (app/attack.py) and arrives on each finding as `tactic` / `technique_id` /
-// `technique_name`; this file only decides display order and colour and rolls
-// findings up into pie slices.
+// `technique_name`; this file only rolls findings up into technique-level cells.
 
-import type { AnomalyFindingOut } from "./api";
-import { ATTACK_TACTIC_HEX } from "./palette";
+import type { AnomalyFindingOut, Severity } from "./api";
+import { SEVERITY_ORDER } from "./severity";
 
-// Findings with no ATT&CK technique (e.g. off_hours) are grouped here.
-export const UNMAPPED_TACTIC = "Behavioural";
-
-// Kill-chain order: recon → initial access → credential access → C2 → exfil,
-// with the unmapped behavioural bucket last.
 export const TACTIC_ORDER: readonly string[] = [
   "Reconnaissance",
+  "Resource Development",
   "Initial Access",
+  "Execution",
+  "Persistence",
+  "Privilege Escalation",
+  "Defense Evasion",
   "Credential Access",
+  "Discovery",
+  "Lateral Movement",
+  "Collection",
   "Command and Control",
   "Exfiltration",
-  UNMAPPED_TACTIC,
+  "Impact",
 ];
 
-export interface TacticSlice {
+export interface TechniqueCell {
   tactic: string;
+  techniqueId: string;
+  techniqueName: string;
   count: number;
-  color: string;
-  /** e.g. "T1110 Brute Force" — the technique(s) feeding this tactic. */
-  techniques: string[];
-  /** Finding `type`s feeding this tactic, for cross-referencing IP breakdowns. */
+  severity: Severity;
+  /** Finding types feeding this technique, used to resolve affected IPs. */
   types: string[];
 }
 
-function order(tactic: string): number {
-  const i = TACTIC_ORDER.indexOf(tactic);
-  return i === -1 ? TACTIC_ORDER.length : i;
+function tacticOrder(tactic: string): number {
+  const index = TACTIC_ORDER.indexOf(tactic);
+  return index === -1 ? TACTIC_ORDER.length : index;
 }
 
-/** Roll findings up into kill-chain-ordered ATT&CK tactic slices. */
-export function buildTacticSlices(
+/** Roll mapped findings up by ATT&CK technique in kill-chain order.
+ * Unmapped behavioural findings remain useful signals, but are not ATT&CK coverage.
+ */
+export function buildTechniqueCells(
   findings: readonly AnomalyFindingOut[],
-): TacticSlice[] {
+): TechniqueCell[] {
   const groups = new Map<
     string,
-    { count: number; techniques: Set<string>; types: Set<string> }
+    {
+      tactic: string;
+      techniqueName: string;
+      count: number;
+      severity: Severity;
+      types: Set<string>;
+    }
   >();
 
   for (const finding of findings) {
-    const tactic = finding.tactic ?? UNMAPPED_TACTIC;
-    const group =
-      groups.get(tactic) ?? { count: 0, techniques: new Set(), types: new Set() };
+    if (!finding.technique_id || !finding.tactic) continue;
+
+    const group = groups.get(finding.technique_id) ?? {
+      tactic: finding.tactic,
+      techniqueName: finding.technique_name ?? "Unknown technique",
+      count: 0,
+      severity: finding.severity,
+      types: new Set<string>(),
+    };
     group.count += 1;
-    if (finding.technique_id) {
-      group.techniques.add(
-        `${finding.technique_id} ${finding.technique_name ?? ""}`.trim(),
-      );
+    if (
+      SEVERITY_ORDER.indexOf(finding.severity) <
+      SEVERITY_ORDER.indexOf(group.severity)
+    ) {
+      group.severity = finding.severity;
     }
     group.types.add(finding.type);
-    groups.set(tactic, group);
+    groups.set(finding.technique_id, group);
   }
 
   return [...groups.entries()]
-    .map(([tactic, group]) => ({
-      tactic,
+    .map(([techniqueId, group]) => ({
+      tactic: group.tactic,
+      techniqueId,
+      techniqueName: group.techniqueName,
       count: group.count,
-      color: ATTACK_TACTIC_HEX[tactic] ?? ATTACK_TACTIC_HEX[UNMAPPED_TACTIC],
-      techniques: [...group.techniques],
+      severity: group.severity,
       types: [...group.types],
     }))
-    .sort((a, b) => order(a.tactic) - order(b.tactic));
+    .sort((a, b) => {
+      const byTactic = tacticOrder(a.tactic) - tacticOrder(b.tactic);
+      if (byTactic !== 0) return byTactic;
+      const bySeverity =
+        SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity);
+      return bySeverity !== 0
+        ? bySeverity
+        : a.techniqueId.localeCompare(b.techniqueId);
+    });
 }
