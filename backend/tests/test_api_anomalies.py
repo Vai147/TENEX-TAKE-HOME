@@ -111,3 +111,45 @@ def test_entries_endpoint_paginates(client, upload):
 
 def test_entry_limit_is_bounded(client, upload):
     assert client.get(f"/api/uploads/{upload.id}?limit=99999").status_code == 422
+
+
+def _haystack(entry: dict) -> str:
+    fields = ("src_ip", "user", "url", "action", "status_code")
+    return " ".join(str(entry.get(f) or "") for f in fields)
+
+
+def test_entries_total_reports_full_count_without_q(client, upload):
+    body = client.get(f"/api/uploads/{upload.id}?limit=5").json()
+
+    assert len(body["entries"]) == 5
+    assert body["entries_total"] == 20, "filtered total defaults to the full count"
+    assert body["summary"]["total_entries"] == 20
+
+
+def test_q_filters_entries_and_total(client, upload):
+    full = client.get(f"/api/uploads/{upload.id}?limit=1000").json()
+    term = full["entries"][0]["src_ip"]
+
+    body = client.get(f"/api/uploads/{upload.id}", params={"q": term, "limit": 1000}).json()
+
+    assert 0 < body["entries_total"] < 20, "search narrows the set"
+    assert len(body["entries"]) == body["entries_total"]
+    assert all(term in _haystack(e) for e in body["entries"])
+    assert body["summary"]["total_entries"] == 20, "the true total is untouched"
+
+
+def test_q_is_case_insensitive(client, upload):
+    full = client.get(f"/api/uploads/{upload.id}?limit=1000").json()
+    user = next(e["user"] for e in full["entries"] if e["user"])
+
+    lower = client.get(f"/api/uploads/{upload.id}", params={"q": user.lower()}).json()
+    upper = client.get(f"/api/uploads/{upload.id}", params={"q": user.upper()}).json()
+
+    assert lower["entries_total"] == upper["entries_total"] > 0
+
+
+def test_q_with_no_match_is_empty(client, upload):
+    body = client.get(f"/api/uploads/{upload.id}", params={"q": "zzq-no-such-term"}).json()
+
+    assert body["entries_total"] == 0
+    assert body["entries"] == []

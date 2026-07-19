@@ -4,22 +4,25 @@ import type { AnomalyFindingOut, Severity } from "./api";
 // to open. `worstSeverity` relies on this ordering.
 export const SEVERITY_ORDER = ["critical", "high", "medium", "low"] as const;
 
-// Alert-card tag: a hairline outline and label in the severity's own colour on a
-// white card. The colour carries no meaning alone — every use pairs it with the
-// severity word.
-export const SEVERITY_BADGE: Record<Severity, string> = {
-  critical: "border-sev-critical text-sev-critical",
-  high: "border-sev-high text-sev-high",
-  medium: "border-sev-medium text-sev-medium",
-  low: "border-sev-low text-sev-low",
-};
-
 export const SEVERITY_FILL: Record<Severity, string> = {
   critical: "bg-sev-critical",
   high: "bg-sev-high",
   medium: "bg-sev-medium",
   low: "bg-sev-low",
 };
+
+/** Findings ordered the way an analyst works the queue: worst severity first,
+ *  and within a severity the most confident detector first. Index 0 is the one
+ *  finding to surface as the headline. Pure — returns a new array. */
+export function findingsWorstFirst(
+  findings: readonly AnomalyFindingOut[],
+): AnomalyFindingOut[] {
+  return [...findings].sort((a, b) => {
+    const bySeverity =
+      SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity);
+    return bySeverity !== 0 ? bySeverity : b.confidence - a.confidence;
+  });
+}
 
 export interface SeverityCount {
   severity: Severity;

@@ -49,6 +49,16 @@ export const SEVERITY_HEX = {
   low: "#667085",
 } as const;
 
+// Solid badge fills, darkened from SEVERITY_HEX so white pill text clears WCAG AA
+// (the bright ramp above is reserved for dots, rails, and charts where the colour
+// stands alone). Theme-independent: white-on-fill passes on light and dark.
+export const SEVERITY_SOLID = {
+  critical: "#c01d13",
+  high: "#b45309",
+  medium: "#a16207",
+  low: "#4b5563",
+} as const;
+
 // ---- Chart series ----
 export const SERIES = {
   allowed: SUCCESS,

@@ -120,6 +120,10 @@ class UploadDetail(BaseModel):
     summary: SummaryOut
     entries: list[LogEntryOut]
     findings: list[AnomalyFindingOut]
+    # Count of entries matching the current `q` filter (equals the full total when
+    # no search is active). Drives the entries-table pagination, distinct from
+    # `summary.total_entries`, which is always the true unfiltered count.
+    entries_total: int
 
 
 class IocEnrichmentOut(BaseModel):

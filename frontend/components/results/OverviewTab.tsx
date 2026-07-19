@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
+import { AnchorFinding } from "@/components/results/AnchorFinding";
+import { EntriesSearch } from "@/components/results/EntriesSearch";
 import { EntriesTable } from "@/components/results/EntriesTable";
+import { StatCard } from "@/components/ui/StatCard";
 import type { AnomalyFindingOut, LogEntryOut, Severity, UploadOut } from "@/lib/api";
 import { detectorLabel, formatNumber, formatTimestamp } from "@/lib/format";
-import { SEVERITY_HEX, SUCCESS, DANGER } from "@/lib/palette";
-import { severityMix } from "@/lib/severity";
+import { SEVERITY_HEX } from "@/lib/palette";
+import { findingsWorstFirst, severityMix } from "@/lib/severity";
 
 interface OverviewTabProps {
   upload: UploadOut;
@@ -19,6 +22,9 @@ interface OverviewTabProps {
   page: number;
   pageSize: number;
   tableTotal: number;
+  /** Active search term (from the URL), and the handler that rewrites it. */
+  query: string;
+  onSearch: (q: string) => void;
   entriesLoading: boolean;
   onPageChange: (page: number) => void;
   loadError: string | null;
@@ -34,12 +40,23 @@ export function OverviewTab({
   page,
   pageSize,
   tableTotal,
+  query,
+  onSearch,
   entriesLoading,
   onPageChange,
   loadError,
 }: OverviewTabProps) {
   const failed = upload.status.toLowerCase() === "failed";
   const flaggedShare = totalEntries > 0 ? ((flaggedCount / totalEntries) * 100).toFixed(1) : "0.0";
+
+  // The one finding to open first, and the log row it points at when that row is
+  // on the loaded page (the anchor may sit on a later page — then we lead with
+  // the finding alone).
+  const topFinding = useMemo(() => findingsWorstFirst(findings)[0] ?? null, [findings]);
+  const anchorEntry = useMemo(
+    () => (topFinding ? (entries.find((e) => e.id === topFinding.entry_id) ?? null) : null),
+    [topFinding, entries],
+  );
 
   return (
     <div className="flex flex-col gap-5">
@@ -48,8 +65,7 @@ export function OverviewTab({
           {upload.filename}
         </h1>
         <span
-          className="rounded-md border border-border bg-surface px-2.5 py-[3px] text-[11px] font-medium"
-          style={{ color: failed ? DANGER : SUCCESS }}
+          className={`rounded-md border bg-surface px-2.5 py-[3px] text-[11px] font-medium ${failed ? "text-danger" : "text-success"}`}
         >
           {capitalize(upload.status)}
         </span>
@@ -70,23 +86,28 @@ export function OverviewTab({
         </p>
       )}
 
-      <div className="grid gap-3.5 grid-cols-1 md:grid-cols-[1fr_1fr_1.5fr]">
-        <Tile label="Entries parsed">
-          <p className="mt-2 font-mono text-[28px] font-semibold text-ink-primary">
-            {formatNumber(totalEntries)}
-          </p>
-        </Tile>
+      <AnchorFinding
+        finding={topFinding}
+        entry={anchorEntry}
+        uploadId={upload.id}
+        totalFindings={findings.length}
+      />
 
-        <Tile label="Entries flagged">
-          <p className="mt-2 font-mono text-[28px] font-semibold text-sev-critical">
-            {formatNumber(flaggedCount)}
-          </p>
-          <p className="mt-1 font-mono text-[12px] text-ink-faint">
-            {flaggedShare}% of traffic
-          </p>
-        </Tile>
+      <div className="grid gap-3.5 grid-cols-1 md:grid-cols-[1fr_1fr_1.6fr]">
+        <StatCard label="Entries parsed" value={formatNumber(totalEntries)} />
 
-        <Tile
+        <StatCard
+          label="Entries flagged"
+          tone={flaggedCount > 0 ? "danger" : "neutral"}
+          value={
+            <span className={flaggedCount > 0 ? "text-sev-critical" : undefined}>
+              {formatNumber(flaggedCount)}
+            </span>
+          }
+          hint={`${flaggedShare}% of traffic`}
+        />
+
+        <StatCard
           label="Findings by severity"
           aside={
             findings.length > 0
@@ -95,38 +116,26 @@ export function OverviewTab({
           }
         >
           <SeverityBar findings={findings} />
-        </Tile>
+        </StatCard>
       </div>
 
-      <EntriesTable
-        entries={entries}
-        flagged={flagged}
-        page={page}
-        pageSize={pageSize}
-        totalEntries={tableTotal}
-        loading={entriesLoading}
-        onPageChange={onPageChange}
-      />
-    </div>
-  );
-}
-
-function Tile({
-  label,
-  aside,
-  children,
-}: {
-  label: string;
-  aside?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-[10px] border border-border bg-surface px-[18px] py-4">
-      <div className="flex items-baseline justify-between gap-2">
-        <p className="text-[12px] font-medium text-ink-muted">{label}</p>
-        {aside && <p className="font-mono text-[12px] text-ink-faint">{aside}</p>}
+      <div>
+        <EntriesSearch
+          value={query}
+          onSearch={onSearch}
+          resultCount={tableTotal}
+          loading={entriesLoading}
+        />
+        <EntriesTable
+          entries={entries}
+          flagged={flagged}
+          page={page}
+          pageSize={pageSize}
+          totalEntries={tableTotal}
+          loading={entriesLoading}
+          onPageChange={onPageChange}
+        />
       </div>
-      {children}
     </div>
   );
 }

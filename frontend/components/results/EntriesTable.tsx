@@ -1,3 +1,12 @@
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { LogEntryOut, Severity } from "@/lib/api";
 import { formatNumber, formatTimestamp } from "@/lib/format";
 import { SEVERITY_HEX } from "@/lib/palette";
@@ -33,43 +42,43 @@ export function EntriesTable({
   return (
     <section aria-labelledby="entries-heading">
       <header className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="entries-heading" className="text-[15px] font-semibold text-ink-primary">
+        <h2 id="entries-heading" className="text-[15px] font-semibold text-foreground">
           Log entries
         </h2>
-        <p className="text-[12px] text-ink-faint">
+        <p className="text-xs text-muted-foreground">
           anomalous rows marked in the leftmost column
         </p>
       </header>
 
-      <div className="overflow-x-auto rounded-[10px] border border-border bg-surface">
+      <div className="overflow-x-auto rounded-xl border bg-card">
         {/* Hold the previous rows at reduced opacity while paging: a skeleton
             here would collapse the table height and jump the page. */}
-        <table
-          className={`w-full border-collapse font-mono text-[12px] transition-opacity ${loading ? "opacity-50" : ""}`}
+        <Table
+          className={`font-mono text-xs transition-opacity ${loading ? "opacity-50" : ""}`}
         >
-          <thead>
-            <tr className="bg-surface-alt text-left text-ink-muted">
-              <th className="w-6 px-3.5 py-[11px]">
+          <TableHeader>
+            <TableRow className="bg-muted/40 hover:bg-muted/40">
+              <TableHead className="w-6">
                 <span className="sr-only">Anomaly</span>
-              </th>
-              <Th>Time</Th>
-              <Th>Src IP</Th>
-              <Th>User</Th>
-              <Th>URL</Th>
-              <Th>Action</Th>
-              <Th className="text-right">Status</Th>
-              <Th className="text-right">Bytes</Th>
-            </tr>
-          </thead>
-          <tbody>
+              </TableHead>
+              <TableHead className="font-sans">Time</TableHead>
+              <TableHead className="font-sans">Src IP</TableHead>
+              <TableHead className="font-sans">User</TableHead>
+              <TableHead className="font-sans">URL</TableHead>
+              <TableHead className="font-sans">Action</TableHead>
+              <TableHead className="text-right font-sans">Status</TableHead>
+              <TableHead className="text-right font-sans">Bytes</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {entries.map((entry) => (
               <Row key={entry.id} entry={entry} severity={flagged.get(entry.id)} />
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
 
         {entries.length === 0 && !loading && (
-          <p className="px-3.5 py-8 text-center text-[13px] text-ink-muted">
+          <p className="px-4 py-8 text-center text-[13px] text-muted-foreground">
             No entries on this page.
           </p>
         )}
@@ -79,20 +88,30 @@ export function EntriesTable({
         aria-label="Entries pagination"
         className="mt-2.5 flex flex-wrap items-center justify-between gap-3"
       >
-        <p className="font-mono text-[12px] text-ink-faint">
+        <p className="font-mono text-xs text-muted-foreground">
           showing {formatNumber(first)}–{formatNumber(last)} of{" "}
           {formatNumber(totalEntries)}
         </p>
         <div className="flex items-center gap-2">
-          <PageButton onClick={() => onPageChange(current - 1)} disabled={current <= 1}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(current - 1)}
+            disabled={current <= 1}
+          >
             Prev
-          </PageButton>
-          <span className="font-mono text-[12px] text-ink-muted">
+          </Button>
+          <span className="font-mono text-xs text-muted-foreground">
             {current} / {lastPage}
           </span>
-          <PageButton onClick={() => onPageChange(current + 1)} disabled={current >= lastPage}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(current + 1)}
+            disabled={current >= lastPage}
+          >
             Next
-          </PageButton>
+          </Button>
         </div>
       </nav>
     </section>
@@ -102,11 +121,8 @@ export function EntriesTable({
 function Row({ entry, severity }: { entry: LogEntryOut; severity: Severity | undefined }) {
   const blocked = (entry.action ?? "").toLowerCase() === "blocked";
   return (
-    <tr
-      className="border-t border-divider"
-      style={severity ? { background: "rgba(217,45,32,0.05)" } : undefined}
-    >
-      <td className="px-3.5 py-2.5 align-middle">
+    <TableRow className={severity ? "bg-destructive/[0.05] hover:bg-destructive/[0.08]" : undefined}>
+      <TableCell className="align-middle">
         {severity && (
           <span
             className="block h-1.5 w-1.5 rounded-full"
@@ -115,66 +131,22 @@ function Row({ entry, severity }: { entry: LogEntryOut; severity: Severity | und
             <span className="sr-only">{severity} severity anomaly</span>
           </span>
         )}
-      </td>
-      <Td className="whitespace-nowrap text-ink-muted">{formatTimestamp(entry.ts)}</Td>
-      <Td className="whitespace-nowrap text-ink-primary">{entry.src_ip ?? "—"}</Td>
-      <Td className="text-ink-muted">{entry.user ?? "—"}</Td>
-      <Td
-        className="max-w-[280px] truncate text-ink-muted"
-        title={entry.url ?? undefined}
-      >
+      </TableCell>
+      <TableCell className="whitespace-nowrap text-muted-foreground">
+        {formatTimestamp(entry.ts)}
+      </TableCell>
+      <TableCell className="whitespace-nowrap text-foreground">{entry.src_ip ?? "—"}</TableCell>
+      <TableCell className="text-muted-foreground">{entry.user ?? "—"}</TableCell>
+      <TableCell className="max-w-[280px] truncate text-muted-foreground" title={entry.url ?? undefined}>
         {entry.url ?? "—"}
-      </Td>
-      <Td className={blocked ? "text-danger" : "text-ink-muted"}>
+      </TableCell>
+      <TableCell className={blocked ? "font-medium text-danger" : "text-muted-foreground"}>
         {entry.action ?? "—"}
-      </Td>
-      <Td className="text-right text-ink-primary">{entry.status_code ?? "—"}</Td>
-      <Td className="text-right text-ink-primary">
+      </TableCell>
+      <TableCell className="text-right text-foreground">{entry.status_code ?? "—"}</TableCell>
+      <TableCell className="text-right text-foreground">
         {entry.bytes_recv === null ? "—" : formatNumber(entry.bytes_recv)}
-      </Td>
-    </tr>
-  );
-}
-
-function Th({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <th className={`px-3.5 py-[11px] font-sans font-medium ${className}`}>{children}</th>
-  );
-}
-
-function Td({
-  children,
-  className = "",
-  title,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  title?: string;
-}) {
-  return (
-    <td className={`px-3.5 py-2.5 ${className}`} title={title}>
-      {children}
-    </td>
-  );
-}
-
-function PageButton({
-  children,
-  onClick,
-  disabled,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  disabled: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="rounded-md border border-border-strong bg-surface px-3.5 py-1.5 text-[12px] font-medium text-ink-secondary transition-colors hover:border-ink-faint focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:text-ink-disabled disabled:hover:border-border-strong"
-    >
-      {children}
-    </button>
+      </TableCell>
+    </TableRow>
   );
 }

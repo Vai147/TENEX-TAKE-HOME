@@ -83,6 +83,8 @@ export interface UploadDetail {
   summary: { total_entries: number; flagged_count: number; narrative: string | null };
   entries: LogEntryOut[];
   findings: AnomalyFindingOut[];
+  /** Count of entries matching the active `q` filter (full total when no search). */
+  entries_total: number;
 }
 
 export interface AnomaliesOut {
@@ -125,11 +127,12 @@ export async function uploadFile(file: File): Promise<UploadOut> {
 
 export async function getUpload(
   id: number,
-  { limit, offset }: { limit?: number; offset?: number } = {},
+  { limit, offset, q }: { limit?: number; offset?: number; q?: string } = {},
 ): Promise<UploadDetail> {
   const params = new URLSearchParams();
   if (limit !== undefined) params.set("limit", String(limit));
   if (offset !== undefined) params.set("offset", String(offset));
+  if (q) params.set("q", q);
   const query = params.toString();
   return authedJson<UploadDetail>(
     `/api/uploads/${id}${query ? `?${query}` : ""}`,
