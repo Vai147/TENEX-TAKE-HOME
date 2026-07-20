@@ -10,11 +10,13 @@ import json
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
+from urllib.parse import urlparse
 
-from app.detectors.base import EntryLike, is_blocked
+from app.detectors.base import EntryLike, Finding, is_blocked
 
 BUCKET = timedelta(hours=1)
 TOP_TALKER_LIMIT = 10
+MAX_BREAKDOWN_ITEMS = 6
 
 
 @dataclass(frozen=True)
@@ -63,7 +65,8 @@ def _timeline(entries: Sequence[EntryLike]) -> list[TimelineBucket]:
             counts[1] += 1
 
     return [
-        TimelineBucket(start=key.isoformat(), requests=counts[0], blocked=counts[1])
+        TimelineBucket(start=key.isoformat(),
+                       requests=counts[0], blocked=counts[1])
         for key, counts in sorted(buckets.items())
     ]
 
@@ -81,12 +84,89 @@ def _top_talkers(entries: Sequence[EntryLike]) -> list[TalkerStat]:
         row[3] += entry.bytes_sent or 0
 
     talkers = [
-        TalkerStat(src_ip=ip, requests=r[0], blocked=r[1], bytes_recv=r[2], bytes_sent=r[3])
+        TalkerStat(
+            src_ip=ip, requests=r[0], blocked=r[1], bytes_recv=r[2], bytes_sent=r[3])
         for ip, r in stats.items()
     ]
     # Busiest first; IP breaks ties so the output is stable across runs.
     talkers.sort(key=lambda t: (-t.requests, t.src_ip))
     return talkers[:TOP_TALKER_LIMIT]
+
+
+def _take(items: set[str]) -> list[str]:
+    return sorted(items)[:MAX_BREAKDOWN_ITEMS]
+
+
+def _hostname(url: str) -> str:
+    parsed = urlparse(url)
+    return parsed.netloc or url
+
+
+def _hour_ips(entries: Sequence[EntryLike]) -> list[dict[str, object]]:
+    hour_sets: dict[int, dict[str, set[str]]] = {}
+    for entry in entries:
+        if entry.ts is None or not entry.src_ip:
+            continue
+        hour = entry.ts.hour
+        bucket = hour_sets.setdefault(
+            hour, {"allowed": set(), "blocked": set()})
+        (bucket["blocked"] if is_blocked(entry)
+         else bucket["allowed"]).add(entry.src_ip)
+
+    return [
+        {"hour": hour, "allowed": _take(
+            bucket["allowed"]), "blocked": _take(bucket["blocked"])}
+        for hour, bucket in sorted(hour_sets.items())
+    ]
+
+
+def _talker_dests(entries: Sequence[EntryLike]) -> list[dict[str, object]]:
+    dest_sets: dict[str, dict[str, set[str]]] = {}
+    for entry in entries:
+        if not entry.src_ip or not entry.url:
+            continue
+        bucket = dest_sets.setdefault(
+            entry.src_ip, {"allowed": set(), "blocked": set()})
+        target = _hostname(entry.url)
+        (bucket["blocked"] if is_blocked(entry)
+         else bucket["allowed"]).add(target)
+
+    return [
+        {"src_ip": src_ip, "allowed": _take(
+            bucket["allowed"]), "blocked": _take(bucket["blocked"])}
+        for src_ip, bucket in sorted(dest_sets.items())
+    ]
+
+
+def _detector_ips(entries: Sequence[EntryLike], findings: Sequence[Finding]) -> list[dict[str, object]]:
+    entry_ip: dict[int, str] = {}
+    for entry in entries:
+        if entry.id is not None and entry.src_ip:
+            entry_ip[entry.id] = entry.src_ip
+
+    detector_sets: dict[str, set[str]] = {}
+    for finding in findings:
+        if finding.entry_id is None:
+            continue
+        ip = entry_ip.get(finding.entry_id)
+        if not ip:
+            continue
+        detector_sets.setdefault(finding.type, set()).add(ip)
+
+    return [
+        {"type": type_, "ips": _take(ips)}
+        for type_, ips in sorted(detector_sets.items())
+    ]
+
+
+def breakdowns_json(entries: Sequence[EntryLike], findings: Sequence[Finding]) -> str:
+    return json.dumps(
+        {
+            "hour_ips": _hour_ips(entries),
+            "talker_dests": _talker_dests(entries),
+            "detector_ips": _detector_ips(entries, findings),
+        }
+    )
 
 
 def build_aggregates(entries: Sequence[EntryLike]) -> Aggregates:

@@ -78,6 +78,29 @@ export interface TalkerStat {
   bytes_sent: number;
 }
 
+export interface HourBucketOut {
+  hour: number;
+  allowed: string[];
+  blocked: string[];
+}
+
+export interface TalkerDestOut {
+  src_ip: string;
+  allowed: string[];
+  blocked: string[];
+}
+
+export interface DetectorIpsOut {
+  type: string;
+  ips: string[];
+}
+
+export interface BreakdownsOut {
+  hour_ips: HourBucketOut[];
+  talker_dests: TalkerDestOut[];
+  detector_ips: DetectorIpsOut[];
+}
+
 export interface UploadDetail {
   upload: UploadOut;
   summary: { total_entries: number; flagged_count: number; narrative: string | null };
@@ -98,6 +121,7 @@ export interface AnomaliesOut {
   findings: AnomalyFindingOut[];
   timeline: TimelineBucket[];
   top_talkers: TalkerStat[];
+  breakdowns: BreakdownsOut;
 }
 
 async function authedJson<T>(path: string, init?: RequestInit): Promise<T> {

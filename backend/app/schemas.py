@@ -97,6 +97,29 @@ class TalkerStatOut(BaseModel):
     bytes_sent: int
 
 
+class HourBucketOut(BaseModel):
+    hour: int
+    allowed: list[str]
+    blocked: list[str]
+
+
+class TalkerDestOut(BaseModel):
+    src_ip: str
+    allowed: list[str]
+    blocked: list[str]
+
+
+class DetectorIpsOut(BaseModel):
+    type: str
+    ips: list[str]
+
+
+class BreakdownsOut(BaseModel):
+    hour_ips: list[HourBucketOut] = []
+    talker_dests: list[TalkerDestOut] = []
+    detector_ips: list[DetectorIpsOut] = []
+
+
 class AnomaliesOut(BaseModel):
     """The analysis view: what was found, what it means, and who to believe.
 
@@ -112,6 +135,7 @@ class AnomaliesOut(BaseModel):
     findings: list[AnomalyFindingOut]
     timeline: list[TimelineBucketOut]
     top_talkers: list[TalkerStatOut]
+    breakdowns: BreakdownsOut
 
 
 class UploadDetail(BaseModel):

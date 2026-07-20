@@ -102,7 +102,8 @@ def get_upload(
     upload_id: int,
     limit: int = Query(DEFAULT_ENTRY_LIMIT, ge=1, le=MAX_ENTRY_LIMIT),
     offset: int = Query(0, ge=0),
-    q: str | None = Query(None, max_length=200, description="Filter entries by src IP, user, URL, action, or status."),
+    q: str | None = Query(
+        None, max_length=200, description="Filter entries by src IP, user, URL, action, or status."),
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
 ) -> UploadDetail:
@@ -188,9 +189,18 @@ def get_anomalies(
         flagged_count=summary.flagged_count if summary else 0,
         total_entries=summary.total_entries if summary else 0,
         findings=findings,
-        timeline=json.loads(summary.timeline_json) if summary and summary.timeline_json else [],
+        timeline=json.loads(
+            summary.timeline_json) if summary and summary.timeline_json else [],
         top_talkers=(
-            json.loads(summary.top_talkers_json) if summary and summary.top_talkers_json else []
+            json.loads(
+                summary.top_talkers_json) if summary and summary.top_talkers_json else []
+        ),
+        breakdowns=(
+            json.loads(summary.breakdowns_json) if summary and summary.breakdowns_json else {
+                "hour_ips": [],
+                "talker_dests": [],
+                "detector_ips": [],
+            }
         ),
     )
 
@@ -262,19 +272,23 @@ def chat_about_upload(
         narrative=summary.narrative if summary else None,
         total_entries=summary.total_entries if summary else 0,
         flagged_count=summary.flagged_count if summary else 0,
-        timeline=json.loads(summary.timeline_json) if summary and summary.timeline_json else [],
+        timeline=json.loads(
+            summary.timeline_json) if summary and summary.timeline_json else [],
         top_talkers=(
-            json.loads(summary.top_talkers_json) if summary and summary.top_talkers_json else []
+            json.loads(
+                summary.top_talkers_json) if summary and summary.top_talkers_json else []
         ),
         findings=findings,
         enrichments=get_enrichments(db, upload_id),
     )
-    history = [{"role": turn.role, "content": turn.content} for turn in body.history]
+    history = [{"role": turn.role, "content": turn.content}
+               for turn in body.history]
 
     try:
         answer = chat(context, history, body.message)
     except LlmUnavailable as exc:
-        raise HTTPException(status_code=503, detail=f"Assistant unavailable: {exc}")
+        raise HTTPException(
+            status_code=503, detail=f"Assistant unavailable: {exc}")
     return ChatReply(answer=answer)
 
 

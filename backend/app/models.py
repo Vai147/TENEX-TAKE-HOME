@@ -26,7 +26,8 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow)
 
 
 class Upload(Base):
@@ -38,19 +39,25 @@ class Upload(Base):
     stored_path: Mapped[str] = mapped_column(String(512))
     status: Mapped[str] = mapped_column(String(32), default="processing")
     llm_ok: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow)
 
-    entries: Mapped[list["LogEntry"]] = relationship(back_populates="upload", cascade="all, delete-orphan")
-    findings: Mapped[list["AnomalyFinding"]] = relationship(back_populates="upload", cascade="all, delete-orphan")
-    summary: Mapped["AnalysisSummary"] = relationship(back_populates="upload", uselist=False, cascade="all, delete-orphan")
+    entries: Mapped[list["LogEntry"]] = relationship(
+        back_populates="upload", cascade="all, delete-orphan")
+    findings: Mapped[list["AnomalyFinding"]] = relationship(
+        back_populates="upload", cascade="all, delete-orphan")
+    summary: Mapped["AnalysisSummary"] = relationship(
+        back_populates="upload", uselist=False, cascade="all, delete-orphan")
 
 
 class LogEntry(Base):
     __tablename__ = "log_entries"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    upload_id: Mapped[int] = mapped_column(ForeignKey("uploads.id"), index=True)
-    ts: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    upload_id: Mapped[int] = mapped_column(
+        ForeignKey("uploads.id"), index=True)
+    ts: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True)
     src_ip: Mapped[str | None] = mapped_column(String(64), nullable=True)
     user: Mapped[str | None] = mapped_column(String(128), nullable=True)
     url: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -68,8 +75,10 @@ class AnomalyFinding(Base):
     __tablename__ = "anomaly_findings"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    upload_id: Mapped[int] = mapped_column(ForeignKey("uploads.id"), index=True)
-    entry_id: Mapped[int | None] = mapped_column(ForeignKey("log_entries.id"), nullable=True)
+    upload_id: Mapped[int] = mapped_column(
+        ForeignKey("uploads.id"), index=True)
+    entry_id: Mapped[int | None] = mapped_column(
+        ForeignKey("log_entries.id"), nullable=True)
     type: Mapped[str] = mapped_column(String(64))
     confidence: Mapped[float] = mapped_column(Float)
     severity: Mapped[str] = mapped_column(String(16))
@@ -100,11 +109,14 @@ class IocEnrichment(Base):
     __tablename__ = "ioc_enrichments"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    upload_id: Mapped[int] = mapped_column(ForeignKey("uploads.id"), index=True)
+    upload_id: Mapped[int] = mapped_column(
+        ForeignKey("uploads.id"), index=True)
     # A representative entry the indicator came from, for cross-linking in the UI.
-    entry_id: Mapped[int | None] = mapped_column(ForeignKey("log_entries.id"), nullable=True)
+    entry_id: Mapped[int | None] = mapped_column(
+        ForeignKey("log_entries.id"), nullable=True)
 
-    indicator_type: Mapped[str] = mapped_column(String(16))  # url | domain | ip
+    indicator_type: Mapped[str] = mapped_column(
+        String(16))  # url | domain | ip
     indicator: Mapped[str] = mapped_column(Text, index=True)
 
     # ok | unavailable | not_found — see docstring.
@@ -119,17 +131,20 @@ class IocEnrichment(Base):
     threat_labels: Mapped[str | None] = mapped_column(Text, nullable=True)
     vt_link: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
-    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow)
 
 
 class AnalysisSummary(Base):
     __tablename__ = "analysis_summary"
 
-    upload_id: Mapped[int] = mapped_column(ForeignKey("uploads.id"), primary_key=True)
+    upload_id: Mapped[int] = mapped_column(
+        ForeignKey("uploads.id"), primary_key=True)
     total_entries: Mapped[int] = mapped_column(Integer, default=0)
     flagged_count: Mapped[int] = mapped_column(Integer, default=0)
     timeline_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     top_talkers_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    breakdowns_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     # SOC timeline narrative. Written by Claude when the analysis succeeds, and by
     # the deterministic fallback when it does not — `Upload.llm_ok` says which.
     narrative: Mapped[str | None] = mapped_column(Text, nullable=True)

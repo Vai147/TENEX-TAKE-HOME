@@ -21,7 +21,12 @@ import {
   TACTIC_ORDER,
   type TechniqueCell,
 } from "@/lib/attack";
-import { deriveBreakdowns, orNotLoaded, type Breakdowns } from "@/lib/breakdowns";
+import {
+  deriveBreakdowns,
+  normalizeBreakdowns,
+  orNotLoaded,
+  type Breakdowns,
+} from "@/lib/breakdowns";
 import { detectorLabel, formatHour, formatNumber } from "@/lib/format";
 import { CHART_INK, PIE_PALETTES, SERIES, SEVERITY_HEX } from "@/lib/palette";
 import { SEVERITY_ORDER } from "@/lib/severity";
@@ -46,10 +51,11 @@ interface DashboardTabProps {
 export function DashboardTab({ analysis, entries }: DashboardTabProps) {
   const router = useRouter();
   const uploadId = analysis.upload_id;
-  const breakdowns = useMemo(
-    () => deriveBreakdowns(entries, analysis.findings),
-    [entries, analysis.findings],
-  );
+  const breakdowns = useMemo<Breakdowns>(() => {
+    return analysis.breakdowns
+      ? normalizeBreakdowns(analysis.breakdowns)
+      : deriveBreakdowns(entries, analysis.findings);
+  }, [analysis.breakdowns, entries, analysis.findings]);
 
   const detectors = useMemo(() => buildDetectors(analysis, breakdowns), [analysis, breakdowns]);
   const totalFindings = analysis.findings.length;
@@ -164,60 +170,60 @@ function AttackMatrix({
           const cells = byTactic.get(tactic) ?? [];
           const active = cells.length > 0;
           return (
-          <div key={tactic} className="flex min-w-0 flex-col gap-1">
-            <div
-              className="flex min-h-[42px] items-center justify-center rounded-sm px-2 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.03em] text-white"
-              style={{ backgroundColor: "#343b5b", opacity: active ? 1 : 0.5 }}
-            >
-              {tactic}
-            </div>
-
-            {cells.map((technique) => {
-              const color = SEVERITY_HEX[technique.severity];
-              const ips = orNotLoaded(techniqueIps(technique, breakdowns));
-
-              return (
-                <button
-                  type="button"
-                  key={technique.techniqueId}
-                  onClick={onOpenAlerts}
-                  className="min-h-[76px] rounded-sm border bg-card px-2 py-2 text-left shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                  style={{
-                    // Translucent severity wash layers over the card in either
-                    // theme, instead of a fixed light fill.
-                    backgroundImage: `linear-gradient(0deg, color-mix(in srgb, ${color} 14%, transparent), color-mix(in srgb, ${color} 14%, transparent))`,
-                    borderColor: color,
-                    borderTopWidth: 4,
-                  }}
-                  title={`${technique.count} finding${technique.count === 1 ? "" : "s"}; source IPs: ${ips.join(", ")}`}
-                >
-                  <span className="flex items-start justify-between gap-1">
-                    <span className="font-mono text-[9px] font-semibold" style={{ color }}>
-                      {technique.techniqueId}
-                    </span>
-                    <span
-                      className="rounded-full px-2 py-0.5 font-mono text-[10px] font-semibold text-white"
-                      style={{ backgroundColor: color }}
-                    >
-                      {technique.count}
-                    </span>
-                  </span>
-                  <span className="mt-1.5 block text-[10px] font-semibold leading-snug text-foreground">
-                    {technique.techniqueName}
-                  </span>
-                  <span className="mt-1.5 block truncate font-mono text-[8px] text-muted-foreground">
-                    {ips.join(", ")}
-                  </span>
-                </button>
-              );
-            })}
-
-            {!active && (
-              <div className="flex min-h-[76px] items-center justify-center rounded-sm border border-dashed border-border bg-muted/20 text-[11px] text-muted-foreground">
-                —
+            <div key={tactic} className="flex min-w-0 flex-col gap-1">
+              <div
+                className="flex min-h-[42px] items-center justify-center rounded-sm px-2 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.03em] text-white"
+                style={{ backgroundColor: "#343b5b", opacity: active ? 1 : 0.5 }}
+              >
+                {tactic}
               </div>
-            )}
-          </div>
+
+              {cells.map((technique) => {
+                const color = SEVERITY_HEX[technique.severity];
+                const ips = orNotLoaded(techniqueIps(technique, breakdowns));
+
+                return (
+                  <button
+                    type="button"
+                    key={technique.techniqueId}
+                    onClick={onOpenAlerts}
+                    className="min-h-[76px] rounded-sm border bg-card px-2 py-2 text-left shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    style={{
+                      // Translucent severity wash layers over the card in either
+                      // theme, instead of a fixed light fill.
+                      backgroundImage: `linear-gradient(0deg, color-mix(in srgb, ${color} 14%, transparent), color-mix(in srgb, ${color} 14%, transparent))`,
+                      borderColor: color,
+                      borderTopWidth: 4,
+                    }}
+                    title={`${technique.count} finding${technique.count === 1 ? "" : "s"}; source IPs: ${ips.join(", ")}`}
+                  >
+                    <span className="flex items-start justify-between gap-1">
+                      <span className="font-mono text-[9px] font-semibold" style={{ color }}>
+                        {technique.techniqueId}
+                      </span>
+                      <span
+                        className="rounded-full px-2 py-0.5 font-mono text-[10px] font-semibold text-white"
+                        style={{ backgroundColor: color }}
+                      >
+                        {technique.count}
+                      </span>
+                    </span>
+                    <span className="mt-1.5 block text-[10px] font-semibold leading-snug text-foreground">
+                      {technique.techniqueName}
+                    </span>
+                    <span className="mt-1.5 block truncate font-mono text-[8px] text-muted-foreground">
+                      {ips.join(", ")}
+                    </span>
+                  </button>
+                );
+              })}
+
+              {!active && (
+                <div className="flex min-h-[76px] items-center justify-center rounded-sm border border-dashed border-border bg-muted/20 text-[11px] text-muted-foreground">
+                  —
+                </div>
+              )}
+            </div>
           );
         })}
       </div>

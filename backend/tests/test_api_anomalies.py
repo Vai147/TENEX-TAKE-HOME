@@ -28,7 +28,8 @@ def client(db_session, analyst, monkeypatch):
         lambda aggregates, findings, entries=(): SimpleNamespace(
             narrative="Claude's timeline.",
             explanations=[
-                SimpleNamespace(finding_index=i, explanation=f"Because {i}.", severity="high")
+                SimpleNamespace(finding_index=i,
+                                explanation=f"Because {i}.", severity="high")
                 for i in range(len(findings))
             ],
         ),
@@ -44,7 +45,8 @@ def client(db_session, analyst, monkeypatch):
 @pytest.fixture
 def upload(db_session, analyst):
     return process_upload(
-        db_session, analyst.id, "a.csv", (EXAMPLES / "zscaler_anomalous.csv").read_bytes()
+        db_session, analyst.id, "a.csv", (EXAMPLES /
+                                          "zscaler_anomalous.csv").read_bytes()
     )
 
 
@@ -59,19 +61,35 @@ def test_anomalies_endpoint_returns_the_full_analysis(client, upload):
     assert body["findings"], "findings must be present"
     assert body["timeline"], "chart data must be present"
     assert body["top_talkers"][0]["src_ip"] == "192.168.9.66"
+    assert body["breakdowns"]["hour_ips"]
+    assert body["breakdowns"]["talker_dests"]
+    assert body["breakdowns"]["detector_ips"]
+
+
+def test_anomalies_endpoint_includes_breakdowns(client, upload):
+    body = client.get(f"/api/uploads/{upload.id}/anomalies").json()
+
+    assert isinstance(body["breakdowns"], dict)
+    assert all(key in body["breakdowns"]
+               for key in ["hour_ips", "talker_dests", "detector_ips"])
+    assert all(isinstance(body["breakdowns"][key], list)
+               for key in body["breakdowns"])
 
 
 def test_findings_carry_both_verdicts(client, upload):
-    finding = client.get(f"/api/uploads/{upload.id}/anomalies").json()["findings"][0]
+    finding = client.get(
+        f"/api/uploads/{upload.id}/anomalies").json()["findings"][0]
 
-    assert finding["severity"] in {"low", "medium", "high", "critical"}  # deterministic
+    assert finding["severity"] in {
+        "low", "medium", "high", "critical"}  # deterministic
     assert finding["llm_severity"] == "high"  # Claude's opinion, kept separate
     assert finding["explanation"].startswith("Because")
     assert finding["source"] == "deterministic"
 
 
 def test_findings_are_ranked_worst_first(client, upload):
-    findings = client.get(f"/api/uploads/{upload.id}/anomalies").json()["findings"]
+    findings = client.get(
+        f"/api/uploads/{upload.id}/anomalies").json()["findings"]
     confidences = [f["confidence"] for f in findings]
 
     assert confidences == sorted(confidences, reverse=True)
@@ -110,7 +128,8 @@ def test_entries_endpoint_paginates(client, upload):
 
 
 def test_entry_limit_is_bounded(client, upload):
-    assert client.get(f"/api/uploads/{upload.id}?limit=99999").status_code == 422
+    assert client.get(
+        f"/api/uploads/{upload.id}?limit=99999").status_code == 422
 
 
 def _haystack(entry: dict) -> str:
@@ -130,7 +149,8 @@ def test_q_filters_entries_and_total(client, upload):
     full = client.get(f"/api/uploads/{upload.id}?limit=1000").json()
     term = full["entries"][0]["src_ip"]
 
-    body = client.get(f"/api/uploads/{upload.id}", params={"q": term, "limit": 1000}).json()
+    body = client.get(f"/api/uploads/{upload.id}",
+                      params={"q": term, "limit": 1000}).json()
 
     assert 0 < body["entries_total"] < 20, "search narrows the set"
     assert len(body["entries"]) == body["entries_total"]
@@ -142,14 +162,17 @@ def test_q_is_case_insensitive(client, upload):
     full = client.get(f"/api/uploads/{upload.id}?limit=1000").json()
     user = next(e["user"] for e in full["entries"] if e["user"])
 
-    lower = client.get(f"/api/uploads/{upload.id}", params={"q": user.lower()}).json()
-    upper = client.get(f"/api/uploads/{upload.id}", params={"q": user.upper()}).json()
+    lower = client.get(
+        f"/api/uploads/{upload.id}", params={"q": user.lower()}).json()
+    upper = client.get(
+        f"/api/uploads/{upload.id}", params={"q": user.upper()}).json()
 
     assert lower["entries_total"] == upper["entries_total"] > 0
 
 
 def test_q_with_no_match_is_empty(client, upload):
-    body = client.get(f"/api/uploads/{upload.id}", params={"q": "zzq-no-such-term"}).json()
+    body = client.get(f"/api/uploads/{upload.id}",
+                      params={"q": "zzq-no-such-term"}).json()
 
     assert body["entries_total"] == 0
     assert body["entries"] == []

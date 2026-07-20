@@ -97,9 +97,11 @@ def process_upload(
             total_entries=len(rows),
             # Counted over every finding, not the displayed slice, and over distinct
             # entries, since one row can trip several detectors.
-            flagged_count=len({f.entry_id for f in findings if f.entry_id is not None}),
+            flagged_count=len(
+                {f.entry_id for f in findings if f.entry_id is not None}),
             timeline_json=timeline_json(aggregates),
             top_talkers_json=top_talkers_json(aggregates),
+            breakdowns_json=breakdowns_json(rows, finding_rows),
             narrative=narrative,
         )
     )
@@ -125,7 +127,8 @@ def _narrate(
     try:
         analysis = analyse(aggregates, shown, entries)
     except LlmUnavailable as exc:
-        logger.info("Claude analysis unavailable, using deterministic narrative: %s", exc)
+        logger.info(
+            "Claude analysis unavailable, using deterministic narrative: %s", exc)
         return fallback_narrative(aggregates, shown), False
     except Exception:
         # A bug in our own LLM plumbing must not fail an otherwise good upload.

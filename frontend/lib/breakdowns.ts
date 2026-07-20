@@ -1,14 +1,15 @@
-import type { AnomalyFindingOut, LogEntryOut } from "./api";
+import type {
+  AnomalyFindingOut,
+  BreakdownsOut,
+  DetectorIpsOut,
+  HourBucketOut,
+  LogEntryOut,
+  TalkerDestOut,
+} from "./api";
 
-// Tooltip enrichment derived from the currently-loaded entries page.
-//
-// The API's `timeline` and `top_talkers` carry counts only — not the source IPs
-// per hour, the destinations per talker, or the IPs per detector. Rather than
-// change the data contract, we reconstruct those breakdowns from the entries the
-// table already holds. The cost: when the relevant entry isn't on the loaded
-// page, the breakdown is empty and the tooltip says so. (A backend extension to
-// `aggregates.py` would make these exact regardless of paging — noted in the
-// handoff as the recommended follow-up.)
+// Tooltip enrichment derived from the currently-loaded entries page or the
+// backend-provided breakdowns. The backend version is exact for the whole
+// upload; the entries-page fallback preserves the old page-scoped behavior.
 
 const MAX_ITEMS = 6;
 export const NOT_LOADED = "(not on loaded page)";
@@ -26,6 +27,31 @@ export interface Breakdowns {
   talkerDests: Map<string, AllowedBlocked>;
   /** Source IPs attributed to each detector `type`, via each finding's entry. */
   detectorIps: Map<string, string[]>;
+}
+
+export function normalizeBreakdowns(server: BreakdownsOut): Breakdowns {
+  const hourIps = new Map<number, AllowedBlocked>();
+  for (const bucket of server.hour_ips) {
+    hourIps.set(bucket.hour, {
+      allowed: bucket.allowed,
+      blocked: bucket.blocked,
+    });
+  }
+
+  const talkerDests = new Map<string, AllowedBlocked>();
+  for (const dest of server.talker_dests) {
+    talkerDests.set(dest.src_ip, {
+      allowed: dest.allowed,
+      blocked: dest.blocked,
+    });
+  }
+
+  const detectorIps = new Map<string, string[]>();
+  for (const record of server.detector_ips) {
+    detectorIps.set(record.type, record.ips);
+  }
+
+  return { hourIps, talkerDests, detectorIps };
 }
 
 function isBlocked(action: string | null): boolean {
