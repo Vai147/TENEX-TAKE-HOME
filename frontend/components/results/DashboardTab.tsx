@@ -52,7 +52,14 @@ export function DashboardTab({ analysis, entries }: DashboardTabProps) {
   const router = useRouter();
   const uploadId = analysis.upload_id;
   const breakdowns = useMemo<Breakdowns>(() => {
-    return analysis.breakdowns
+    const serverBreakdowns = analysis.breakdowns;
+    const hasServerBreakdowns = Boolean(
+      serverBreakdowns &&
+        (serverBreakdowns.hour_ips.length > 0 ||
+          serverBreakdowns.talker_dests.length > 0 ||
+          serverBreakdowns.detector_ips.length > 0),
+    );
+    return hasServerBreakdowns && serverBreakdowns
       ? normalizeBreakdowns(analysis.breakdowns)
       : deriveBreakdowns(entries, analysis.findings);
   }, [analysis.breakdowns, entries, analysis.findings]);
@@ -454,7 +461,7 @@ function HourlyBars({
           <XAxis
             dataKey="hour"
             tickFormatter={formatHour}
-            tick={{ fill: CHART_INK.label, fontSize: 10, fontFamily: "var(--font-plex-mono)" }}
+            tick={{ fill: "var(--ink-muted)", fontSize: 10, fontFamily: "var(--font-plex-mono)" }}
             tickLine={false}
             axisLine={{ stroke: CHART_INK.axis }}
             interval="preserveStartEnd"
@@ -469,7 +476,7 @@ function HourlyBars({
                 label={props.label as string | undefined}
                 kind={kind}
                 heading={(l) => formatHour(l)}
-                itemsFor={(l) => breakdowns.hourIps.get(new Date(l).getHours())?.[kind] ?? []}
+                itemsFor={(l) => breakdowns.hourIps.get(new Date(l).getUTCHours())?.[kind] ?? []}
                 itemsLabel="Source IPs"
                 countFor={(l) => {
                   const row = data.find((d) => d.hour === l);
@@ -547,7 +554,7 @@ function TopTalkers({
             type="category"
             dataKey="ip"
             width={118}
-            tick={{ fill: "#1f2733", fontSize: 12, fontFamily: "var(--font-plex-mono)" }}
+            tick={{ fill: "var(--ink-primary)", fontSize: 12, fontFamily: "var(--font-plex-mono)" }}
             tickLine={false}
             axisLine={false}
           />
@@ -623,7 +630,7 @@ function SegmentTip({
       </span>
       <span className="text-[10px] font-medium text-ink-faint">{itemsLabel}</span>
       {items.map((item, i) => (
-        <span key={i} className="font-mono text-[11px] leading-relaxed text-[#475467]">
+        <span key={i} className="font-mono text-[11px] leading-relaxed text-ink-secondary">
           • {item}
         </span>
       ))}

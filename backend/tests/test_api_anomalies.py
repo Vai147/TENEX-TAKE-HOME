@@ -76,6 +76,20 @@ def test_anomalies_endpoint_includes_breakdowns(client, upload):
                for key in body["breakdowns"])
 
 
+def test_anomalies_reconstructs_breakdowns_for_legacy_upload(
+    client, db_session, upload
+):
+    summary = upload.summary
+    summary.breakdowns_json = None
+    db_session.commit()
+
+    body = client.get(f"/api/uploads/{upload.id}/anomalies").json()
+
+    assert body["breakdowns"]["hour_ips"]
+    assert body["breakdowns"]["talker_dests"]
+    assert body["breakdowns"]["detector_ips"]
+
+
 def test_findings_carry_both_verdicts(client, upload):
     finding = client.get(
         f"/api/uploads/{upload.id}/anomalies").json()["findings"][0]

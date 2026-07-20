@@ -7,6 +7,7 @@ from sqlalchemy import String, cast, or_
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
+from app.aggregates import breakdowns_json
 from app.config import get_settings
 from app.db import get_db
 from app.attack_layer import build_navigator_layer
@@ -182,6 +183,20 @@ def get_anomalies(
         .all()
     )
 
+    if summary and summary.breakdowns_json:
+        breakdowns = json.loads(summary.breakdowns_json)
+    else:
+        # Uploads created before breakdowns_json was introduced have no stored
+        # tooltip data. Reconstruct it from the complete upload, rather than
+        # making the frontend infer it from only the currently loaded page.
+        entries = (
+            db.query(LogEntry)
+            .filter(LogEntry.upload_id == upload_id)
+            .order_by(LogEntry.id.asc())
+            .all()
+        )
+        breakdowns = json.loads(breakdowns_json(entries, findings))
+
     return AnomaliesOut(
         upload_id=upload.id,
         llm_ok=upload.llm_ok,
@@ -195,13 +210,7 @@ def get_anomalies(
             json.loads(
                 summary.top_talkers_json) if summary and summary.top_talkers_json else []
         ),
-        breakdowns=(
-            json.loads(summary.breakdowns_json) if summary and summary.breakdowns_json else {
-                "hour_ips": [],
-                "talker_dests": [],
-                "detector_ips": [],
-            }
-        ),
+        breakdowns=breakdowns,
     )
 
 

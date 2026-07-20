@@ -84,7 +84,9 @@ export function deriveBreakdowns(
     if (entry.ts && entry.src_ip) {
       const date = new Date(entry.ts);
       if (!Number.isNaN(date.getTime())) {
-        const hour = date.getHours();
+        // Backend aggregation keys buckets by the timestamp's UTC hour. Using
+        // getHours() here would shift the lookup to the browser's local timezone.
+        const hour = date.getUTCHours();
         const bucket =
           hourSets.get(hour) ?? { allowed: new Set(), blocked: new Set() };
         (isBlocked(entry.action) ? bucket.blocked : bucket.allowed).add(entry.src_ip);
