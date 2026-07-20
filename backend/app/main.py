@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import inspect, text
 
 from app.config import get_settings
 from app.db import Base, SessionLocal, engine
@@ -13,10 +14,25 @@ settings = get_settings()
 
 def _init_db() -> None:
     """Create tables and seed a single prototype user."""
+    # Register every ORM model before creating or inspecting its table.
+    from app import models  # noqa: F401
+
     Base.metadata.create_all(bind=engine)
+
+    # create_all() creates missing tables but does not add columns to tables that
+    # already exist. Keep deployed databases compatible with the dashboard
+    # breakdowns added after the initial schema was created.
+    summary_columns = {
+        column["name"] for column in inspect(engine).get_columns("analysis_summary")
+    }
+    if "breakdowns_json" not in summary_columns:
+        with engine.begin() as connection:
+            connection.execute(
+                text("ALTER TABLE analysis_summary ADD COLUMN breakdowns_json TEXT")
+            )
+
     os.makedirs(settings.upload_dir, exist_ok=True)
 
-    # Import here so models are registered before create_all runs.
     from app.auth import hash_password
     from app.models import User
 

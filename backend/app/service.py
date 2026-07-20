@@ -10,7 +10,12 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from app.aggregates import build_aggregates, timeline_json, top_talkers_json
+from app.aggregates import (
+    breakdowns_json,
+    build_aggregates,
+    timeline_json,
+    top_talkers_json,
+)
 from app.config import get_settings
 from app.detectors import run_detectors, top_findings
 from app.detectors.base import Finding
