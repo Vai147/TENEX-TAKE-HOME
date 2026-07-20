@@ -94,9 +94,6 @@ export VIRUSTOTAL_API_KEY=...              # optional: enables threat intel
 docker compose up --build
 ```
 
-- Frontend → http://localhost:3000
-- Backend  → http://localhost:8000 (Swagger at `/docs`)
-- Postgres → host port **5433** (container 5432)
 
 **Login:** `analyst` / `password123` (seeded on first boot — override with
 `SEED_PASSWORD`).
