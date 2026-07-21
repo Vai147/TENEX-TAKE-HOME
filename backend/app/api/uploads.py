@@ -9,21 +9,31 @@ from sqlalchemy.orm import Session
 from app.auth import get_current_user
 from app.aggregates import breakdowns_json
 from app.config import get_settings
+from app.coverage import coverage_capability
 from app.db import get_db
 from app.attack_layer import build_navigator_layer
 from app.enrich.service import VtNotConfigured, enrich_upload, get_enrichments
 from app.enrich.siem import to_cef_alerts, to_json_alerts
-from app.llm import LlmUnavailable, build_chat_context, chat
-from app.models import AnalysisSummary, AnomalyFinding, LogEntry, Upload, User
+from app.llm import LlmUnavailable, build_chat_context, chat, explain_coverage
+from app.models import (
+    AnalysisSummary,
+    AnomalyFinding,
+    CoverageExplanation,
+    LogEntry,
+    Upload,
+    User,
+)
 from app.schemas import (
     AnomaliesOut,
     ChatReply,
     ChatRequest,
+    CoverageExplanationOut,
     EnrichResultOut,
     ThreatIntelOut,
     UploadDetail,
     UploadOut,
 )
+from app.attack import finding_attack
 from app.service import process_upload
 
 settings = get_settings()
@@ -212,6 +222,77 @@ def get_anomalies(
         ),
         breakdowns=breakdowns,
     )
+
+
+@router.get(
+    "/{upload_id}/coverage-explanations",
+    response_model=list[CoverageExplanationOut],
+)
+def get_coverage_explanations(
+    upload_id: int,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user),
+) -> list[CoverageExplanation]:
+    """All explanations already generated for this upload; never calls Claude."""
+    _owned_upload(db, upload_id, current)
+    return (
+        db.query(CoverageExplanation)
+        .filter(CoverageExplanation.upload_id == upload_id)
+        .order_by(CoverageExplanation.technique_id.asc())
+        .all()
+    )
+
+
+@router.post(
+    "/{upload_id}/coverage-explanations/{technique_id}",
+    response_model=CoverageExplanationOut,
+)
+def create_coverage_explanation(
+    upload_id: int,
+    technique_id: str,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user),
+) -> CoverageExplanation:
+    """Generate once, persist, and return a red/amber coverage explanation."""
+    _owned_upload(db, upload_id, current)
+    capability = coverage_capability(technique_id)
+    if capability is None:
+        raise HTTPException(status_code=404, detail="Technique is not explainable")
+
+    cached = (
+        db.query(CoverageExplanation)
+        .filter(
+            CoverageExplanation.upload_id == upload_id,
+            CoverageExplanation.technique_id == technique_id,
+        )
+        .first()
+    )
+    if cached is not None:
+        return cached
+
+    upload_findings = (
+        db.query(AnomalyFinding)
+        .filter(AnomalyFinding.upload_id == upload_id)
+        .order_by(AnomalyFinding.confidence.desc(), AnomalyFinding.id.asc())
+        .all()
+    )
+    findings = [
+        finding
+        for finding in upload_findings
+        if (attack := finding_attack(finding.type)) is not None
+        and attack.technique_id == technique_id
+    ]
+    explanation, source = explain_coverage(capability, findings)
+    row = CoverageExplanation(
+        upload_id=upload_id,
+        technique_id=technique_id,
+        explanation=explanation,
+        source=source,
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row
 
 
 @router.post("/{upload_id}/enrich", response_model=EnrichResultOut)

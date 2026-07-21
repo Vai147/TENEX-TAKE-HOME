@@ -101,6 +101,18 @@ def test_findings_carry_both_verdicts(client, upload):
     assert finding["source"] == "deterministic"
 
 
+def test_findings_include_anchor_timestamp_independent_of_entry_pagination(
+    client, upload
+):
+    findings = client.get(f"/api/uploads/{upload.id}/anomalies").json()["findings"]
+
+    assert all(
+        finding["anchor_ts"] is not None
+        for finding in findings
+        if finding["entry_id"] is not None
+    )
+
+
 def test_findings_are_ranked_worst_first(client, upload):
     findings = client.get(
         f"/api/uploads/{upload.id}/anomalies").json()["findings"]

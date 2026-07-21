@@ -14,6 +14,7 @@ const TAB_LABELS: Record<ResultTab, string> = {
   summary: "Summary",
   alerts: "Alerts",
   "threat-intel": "Threat Intel",
+  coverage: "MITRE Dashboard",
 };
 
 interface ConsoleHeaderProps {
@@ -103,6 +104,13 @@ function TabNav({
 }) {
   return (
     <nav aria-label="Results views" className="flex gap-0.5 px-5">
+      <Link
+        href="/upload"
+        className="-mb-px mr-1 border-b-2 border-transparent px-3.5 py-3 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+      >
+        New upload
+      </Link>
+      <span className="my-2.5 mr-1 w-px bg-border" aria-hidden="true" />
       {RESULT_TABS.map((tab) => {
         const active = tab === activeTab;
         return (

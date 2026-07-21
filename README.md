@@ -77,11 +77,15 @@ Each detector is a pure `(entries) -> list[Finding]` function in
 | `blocked_spike`   | Spike in blocked requests                         | Reconnaissance · T1595        |
 | `rare_user_agent` | Uncommon / suspicious user-agent strings          | Initial Access · T1190        |
 | `byte_volume`     | Outlier upload volume (Tukey fence)               | Exfiltration · T1048          |
+| `host_sweep`      | Scripted client rapidly contacts distinct hosts   | Discovery · T1046             |
+| `tool_download`   | Executable/script payload download                 | Command & Control · T1105     |
+| `cloud_upload`    | Large upload to a known cloud service              | Exfiltration · T1567          |
 | `off_hours`       | Traffic outside business hours                    | (behavioral signal)           |
 
 The finding→technique mapping lives in [`backend/app/attack.py`](backend/app/attack.py).
 
 ---
+
 
 ## Quick start (Docker)
 
@@ -150,4 +154,3 @@ All routes are under `/api` and require a Bearer token except login.
 Interactive docs at `/docs` when the backend is running.
 
 ---
-

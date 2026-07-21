@@ -46,6 +46,7 @@ export interface LogEntryOut {
 export interface AnomalyFindingOut {
   id: number;
   entry_id: number | null;
+  anchor_ts: string | null;
   type: string;
   confidence: number;
   severity: Severity;
@@ -166,6 +167,30 @@ export async function getUpload(
 // The analysis view: findings, narrative and chart data, without the entries table.
 export async function getAnomalies(id: number): Promise<AnomaliesOut> {
   return authedJson<AnomaliesOut>(`/api/uploads/${id}/anomalies`);
+}
+
+export interface CoverageExplanationOut {
+  technique_id: string;
+  explanation: string;
+  source: "ai" | "fallback";
+}
+
+export async function getCoverageExplanations(
+  id: number,
+): Promise<CoverageExplanationOut[]> {
+  return authedJson<CoverageExplanationOut[]>(
+    `/api/uploads/${id}/coverage-explanations`,
+  );
+}
+
+export async function createCoverageExplanation(
+  uploadId: number,
+  techniqueId: string,
+): Promise<CoverageExplanationOut> {
+  return authedJson<CoverageExplanationOut>(
+    `/api/uploads/${uploadId}/coverage-explanations/${encodeURIComponent(techniqueId)}`,
+    { method: "POST" },
+  );
 }
 
 // ---- VirusTotal threat-intel enrichment ----

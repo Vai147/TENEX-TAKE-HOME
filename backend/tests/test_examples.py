@@ -84,3 +84,13 @@ def test_anomalous_example_leaves_normal_users_alone():
 
     # bob trips the C2 beacon block spike; alice, carol, dave and eve are clean.
     assert flagged_ips == {ATTACKER_IP, "10.0.4.22"}
+
+
+@pytest.mark.parametrize(
+    "detector_type",
+    ["host_sweep", "tool_download", "cloud_upload"],
+)
+def test_vt_flagged_example_triggers_extended_attack_visibility(detector_type):
+    _, findings = _findings_for("zscaler_vt_flagged.csv")
+
+    assert any(f.type == detector_type for f in findings)

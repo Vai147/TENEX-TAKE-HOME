@@ -14,7 +14,16 @@ from __future__ import annotations
 import logging
 from collections.abc import Sequence
 
-from app.detectors import blocked_spike, byte_volume, ip_burst, off_hours, rare_user_agent
+from app.detectors import (
+    blocked_spike,
+    byte_volume,
+    cloud_upload,
+    host_sweep,
+    ip_burst,
+    off_hours,
+    rare_user_agent,
+    tool_download,
+)
 from app.detectors.base import EntryLike, Finding
 
 logger = logging.getLogger(__name__)
@@ -23,6 +32,9 @@ DETECTORS = (
     ip_burst.detect_ip_burst,
     blocked_spike.detect_blocked_spike,
     rare_user_agent.detect_rare_user_agent,
+    host_sweep.detect_host_sweep,
+    tool_download.detect_tool_download,
+    cloud_upload.detect_cloud_upload,
     byte_volume.detect_byte_volume,
     off_hours.detect_off_hours,
 )
@@ -32,6 +44,9 @@ DETECTOR_WEIGHTS = {
     byte_volume.TYPE: 1.0,
     blocked_spike.TYPE: 0.9,
     rare_user_agent.TYPE: 0.7,
+    host_sweep.TYPE: 0.85,
+    tool_download.TYPE: 0.9,
+    cloud_upload.TYPE: 1.0,
     off_hours.TYPE: 0.5,
 }
 DEFAULT_WEIGHT = 0.5
@@ -56,7 +71,7 @@ def run_detectors(entries: Sequence[EntryLike]) -> list[Finding]:
 
     Detectors are best-effort, mirroring the parser's tolerance for messy input:
     one detector blowing up on a pathological file must not throw away the other
-    four's results, nor fail an upload whose entries parsed and stored fine.
+    detectors' results, nor fail an upload whose entries parsed and stored fine.
     """
     findings: list[Finding] = []
     for detect in DETECTORS:

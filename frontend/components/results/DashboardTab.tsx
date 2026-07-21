@@ -15,12 +15,7 @@ import {
 } from "recharts";
 
 import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { fetchAttackLayer, type AnomaliesOut, type LogEntryOut } from "@/lib/api";
-import {
-  buildTechniqueCells,
-  TACTIC_ORDER,
-  type TechniqueCell,
-} from "@/lib/attack";
+import type { AnomaliesOut, LogEntryOut } from "@/lib/api";
 import {
   deriveBreakdowns,
   normalizeBreakdowns,
@@ -28,8 +23,7 @@ import {
   type Breakdowns,
 } from "@/lib/breakdowns";
 import { detectorLabel, formatHour, formatNumber } from "@/lib/format";
-import { CHART_INK, PIE_PALETTES, SERIES, SEVERITY_HEX } from "@/lib/palette";
-import { SEVERITY_ORDER } from "@/lib/severity";
+import { CHART_INK, PIE_PALETTES, SERIES } from "@/lib/palette";
 
 // Detector display order for the donut, matching the prototype.
 const DETECTOR_ORDER = [
@@ -68,14 +62,6 @@ export function DashboardTab({ analysis, entries }: DashboardTabProps) {
   const totalFindings = analysis.findings.length;
   const detSummary = `${totalFindings} findings across ${detectors.length} detector${detectors.length === 1 ? "" : "s"}`;
 
-  const techniques = useMemo(
-    () => buildTechniqueCells(analysis.findings),
-    [analysis.findings],
-  );
-  const mappedCount = techniques.reduce((sum, technique) => sum + technique.count, 0);
-  const unmappedCount = analysis.findings.length - mappedCount;
-  const attackSummary = `${techniques.length} observed technique${techniques.length === 1 ? "" : "s"} · ${mappedCount} mapped finding${mappedCount === 1 ? "" : "s"}`;
-
   return (
     <div className="flex flex-col gap-5">
       <div>
@@ -109,146 +95,6 @@ export function DashboardTab({ analysis, entries }: DashboardTabProps) {
         <TopTalkers topTalkers={analysis.top_talkers} breakdowns={breakdowns} />
       </Card>
 
-      <Card>
-        <CardHead
-          title="MITRE ATT&CK Matrix"
-          sub={`${attackSummary} — observed techniques are highlighted by highest severity`}
-        />
-        <AttackMatrix
-          techniques={techniques}
-          breakdowns={breakdowns}
-          onOpenAlerts={() => router.push(`/uploads/${uploadId}/alerts`)}
-        />
-        {unmappedCount > 0 && (
-          <p className="mt-3 text-[11px] text-ink-faint">
-            {unmappedCount} behavioural finding{unmappedCount === 1 ? "" : "s"} not mapped to ATT&amp;CK.
-          </p>
-        )}
-        <NavigatorDownload uploadId={uploadId} disabled={mappedCount === 0} />
-      </Card>
-    </div>
-  );
-}
-
-// ---- Compact ATT&CK matrix ----
-
-function techniqueIps(technique: TechniqueCell, breakdowns: Breakdowns): string[] {
-  const ips = new Set<string>();
-  for (const type of technique.types) {
-    for (const ip of breakdowns.detectorIps.get(type) ?? []) ips.add(ip);
-  }
-  return [...ips];
-}
-
-function AttackMatrix({
-  techniques,
-  breakdowns,
-  onOpenAlerts,
-}: {
-  techniques: TechniqueCell[];
-  breakdowns: Breakdowns;
-  onOpenAlerts: () => void;
-}) {
-  if (techniques.length === 0) {
-    return (
-      <p className="mt-5 py-8 text-center text-[13px] text-ink-muted">
-        No findings in this log mapped to an ATT&amp;CK technique.
-      </p>
-    );
-  }
-
-  // The whole ATT&CK kill chain is shown as columns for coverage context, but
-  // every technique cell still comes from the log: tactics with no findings get
-  // an empty placeholder rather than reference technique names.
-  const byTactic = new Map<string, TechniqueCell[]>();
-  for (const technique of techniques) {
-    const cells = byTactic.get(technique.tactic) ?? [];
-    cells.push(technique);
-    byTactic.set(technique.tactic, cells);
-  }
-
-  return (
-    <div className="mt-5 overflow-x-auto pb-2">
-      <div
-        className="grid min-w-[2180px] gap-1"
-        style={{ gridTemplateColumns: `repeat(${TACTIC_ORDER.length}, minmax(150px, 1fr))` }}
-      >
-        {TACTIC_ORDER.map((tactic) => {
-          const cells = byTactic.get(tactic) ?? [];
-          const active = cells.length > 0;
-          return (
-            <div key={tactic} className="flex min-w-0 flex-col gap-1">
-              <div
-                className="flex min-h-[42px] items-center justify-center rounded-sm px-2 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.03em] text-white"
-                style={{ backgroundColor: "#343b5b", opacity: active ? 1 : 0.5 }}
-              >
-                {tactic}
-              </div>
-
-              {cells.map((technique) => {
-                const color = SEVERITY_HEX[technique.severity];
-                const ips = orNotLoaded(techniqueIps(technique, breakdowns));
-
-                return (
-                  <button
-                    type="button"
-                    key={technique.techniqueId}
-                    onClick={onOpenAlerts}
-                    className="min-h-[76px] rounded-sm border bg-card px-2 py-2 text-left shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                    style={{
-                      // Translucent severity wash layers over the card in either
-                      // theme, instead of a fixed light fill.
-                      backgroundImage: `linear-gradient(0deg, color-mix(in srgb, ${color} 14%, transparent), color-mix(in srgb, ${color} 14%, transparent))`,
-                      borderColor: color,
-                      borderTopWidth: 4,
-                    }}
-                    title={`${technique.count} finding${technique.count === 1 ? "" : "s"}; source IPs: ${ips.join(", ")}`}
-                  >
-                    <span className="flex items-start justify-between gap-1">
-                      <span className="font-mono text-[9px] font-semibold" style={{ color }}>
-                        {technique.techniqueId}
-                      </span>
-                      <span
-                        className="rounded-full px-2 py-0.5 font-mono text-[10px] font-semibold text-white"
-                        style={{ backgroundColor: color }}
-                      >
-                        {technique.count}
-                      </span>
-                    </span>
-                    <span className="mt-1.5 block text-[10px] font-semibold leading-snug text-foreground">
-                      {technique.techniqueName}
-                    </span>
-                    <span className="mt-1.5 block truncate font-mono text-[8px] text-muted-foreground">
-                      {ips.join(", ")}
-                    </span>
-                  </button>
-                );
-              })}
-
-              {!active && (
-                <div className="flex min-h-[76px] items-center justify-center rounded-sm border border-dashed border-border bg-muted/20 text-[11px] text-muted-foreground">
-                  —
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-divider pt-3 text-[10px] text-ink-faint">
-        <span>Badge = finding count</span>
-        {SEVERITY_ORDER.map((severity) => (
-          <span key={severity} className="inline-flex items-center gap-1 capitalize">
-            <span
-              className="h-2 w-2 rounded-[2px]"
-              style={{ backgroundColor: SEVERITY_HEX[severity] }}
-              aria-hidden="true"
-            />
-            {severity}
-          </span>
-        ))}
-        <span className="ml-auto">Select a cell to open alerts</span>
-      </div>
     </div>
   );
 }
@@ -371,53 +217,6 @@ function DetectorDonut({
           </li>
         ))}
       </ul>
-    </div>
-  );
-}
-
-function NavigatorDownload({
-  uploadId,
-  disabled,
-}: {
-  uploadId: number;
-  disabled: boolean;
-}) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function download() {
-    setBusy(true);
-    setError(null);
-    try {
-      const text = await fetchAttackLayer(uploadId);
-      const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `tenex-attack-${uploadId}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Download failed");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-divider pt-3.5">
-      <button
-        type="button"
-        onClick={download}
-        disabled={disabled || busy}
-        className="inline-flex items-center gap-1.5 text-[12px] font-medium text-accent transition-colors hover:text-accent-hover disabled:cursor-not-allowed disabled:text-ink-faint"
-      >
-        <span aria-hidden="true">↓</span>
-        {busy ? "Preparing…" : "Download ATT&CK Navigator layer"}
-      </button>
-      <span className="text-[11px] text-ink-faint">
-        open in MITRE ATT&CK Navigator
-      </span>
-      {error && <span className="text-[11px] text-error-text">{error}</span>}
     </div>
   );
 }

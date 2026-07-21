@@ -8,6 +8,7 @@ export const RESULT_TABS = [
   "summary",
   "alerts",
   "threat-intel",
+  "coverage",
 ] as const;
 
 export type ResultTab = (typeof RESULT_TABS)[number];

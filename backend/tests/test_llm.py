@@ -14,6 +14,7 @@ from tests.conftest import entry
 
 from app.aggregates import build_aggregates
 from app.detectors.base import Finding
+from app.coverage import coverage_capability
 from app.llm import (
     ANALYSIS_TOOL,
     MAX_EXPLANATION_LENGTH,
@@ -21,6 +22,7 @@ from app.llm import (
     LlmUnavailable,
     analyse,
     fallback_narrative,
+    explain_coverage,
 )
 
 FINDINGS = [
@@ -170,6 +172,22 @@ def test_a_finding_without_an_anchor_entry_still_builds_a_prompt(fake_claude, ag
     fake_claude(_response(_tool_use(_valid_input_for(1))))
 
     assert analyse(aggregates, [orphan], []).narrative
+
+
+def test_partial_coverage_prompt_omits_meaningless_finding_count(fake_claude):
+    messages = fake_claude(
+        _response(SimpleNamespace(type="text", text="This technique was not evaluated."))
+    )
+    capability = coverage_capability("T1566")
+    assert capability is not None
+
+    explanation, source = explain_coverage(capability, [])
+
+    prompt = messages.calls[0]["messages"][0]["content"]
+    assert explanation == "This technique was not evaluated."
+    assert source == "ai"
+    assert "finding_count" not in prompt
+    assert '"findings"' not in prompt
 
 
 # --- rung 1: extract ----------------------------------------------------------

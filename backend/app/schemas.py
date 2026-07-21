@@ -56,6 +56,7 @@ class SummaryOut(BaseModel):
 class AnomalyFindingOut(BaseModel):
     id: int
     entry_id: int | None
+    anchor_ts: datetime | None = None
     type: str
     confidence: float
     severity: str
@@ -192,6 +193,14 @@ class ThreatIntelOut(BaseModel):
     upload_id: int
     enabled: bool  # whether VirusTotal is configured
     enrichments: list[IocEnrichmentOut]
+
+
+class CoverageExplanationOut(BaseModel):
+    technique_id: str
+    explanation: str
+    source: str
+
+    model_config = {"from_attributes": True}
 
 
 # --- "Ask Claude" chat -------------------------------------------------------

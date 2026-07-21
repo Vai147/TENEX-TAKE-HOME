@@ -59,6 +59,15 @@ export const SEVERITY_SOLID = {
   low: "#4b5563",
 } as const;
 
+// ---- Detection-coverage tiers (Coverage tab heatmap) ----
+// Solid fills, so they are theme-independent like SEVERITY_SOLID: the cell is
+// the colour, and its label sits on top of it. "none" is a dashed outline on the
+// card surface rather than a fill, so it carries no hex here.
+export const COVERAGE_HEX = {
+  covered: { fill: "#d92d20", border: "#b42318", name: "#ffffff", code: "rgba(255,255,255,0.8)" },
+  partial: { fill: "#f79009", border: "#d97706", name: "#3a2600", code: "#7a4a00" },
+} as const;
+
 // ---- Chart series ----
 export const SERIES = {
   allowed: SUCCESS,

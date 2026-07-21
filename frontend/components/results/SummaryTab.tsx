@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import type { AnomalyFindingOut, LogEntryOut } from "@/lib/api";
+import type { AnomalyFindingOut } from "@/lib/api";
 import { formatHour } from "@/lib/format";
 import { ACCENT, SEVERITY_HEX, SEVERITY_SOLID } from "@/lib/palette";
 import { SEVERITY_ORDER } from "@/lib/severity";
@@ -8,12 +8,10 @@ interface SummaryTabProps {
   narrative: string | null;
   llmOk: boolean;
   findings: readonly AnomalyFindingOut[];
-  /** Loaded entries, used to resolve each finding's time by entry id. */
-  entries: readonly LogEntryOut[];
 }
 
-export function SummaryTab({ narrative, llmOk, findings, entries }: SummaryTabProps) {
-  const events = buildTimeline(findings, entries);
+export function SummaryTab({ narrative, llmOk, findings }: SummaryTabProps) {
+  const events = buildTimeline(findings);
 
   return (
     <div className="flex flex-col gap-5">
@@ -81,23 +79,16 @@ interface TimelineEvent {
   text: string;
 }
 
-/** Prose over the findings, worst first. Time comes from the anchor entry when
- *  it is on the loaded page; otherwise it is left blank, matching the tooltip
- *  enrichment caveat. */
-function buildTimeline(
-  findings: readonly AnomalyFindingOut[],
-  entries: readonly LogEntryOut[],
-): TimelineEvent[] {
-  const tsByEntry = new Map(entries.map((e) => [e.id, e.ts]));
-
+/** Prose over the findings, worst first. Anchor time arrives with the finding,
+ *  so entry-table pagination cannot erase chronology from the timeline. */
+function buildTimeline(findings: readonly AnomalyFindingOut[]): TimelineEvent[] {
   return [...findings]
     .sort(
       (a, b) => SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity),
     )
     .map((finding) => {
-      const ts = finding.entry_id !== null ? tsByEntry.get(finding.entry_id) : null;
       return {
-        time: ts ? formatHour(ts) : "—",
+        time: finding.anchor_ts ? formatHour(finding.anchor_ts) : "—",
         color: SEVERITY_HEX[finding.severity],
         text: finding.explanation
           ? `${finding.reason} — ${finding.explanation}`

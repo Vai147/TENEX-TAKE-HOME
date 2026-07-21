@@ -42,6 +42,15 @@ _FINDING_ATTACK: dict[str, AttackTechnique] = {
     "byte_volume": AttackTechnique(
         "Exfiltration", "TA0010", "T1048", "Exfiltration Over Alternative Protocol"
     ),
+    "host_sweep": AttackTechnique(
+        "Discovery", "TA0007", "T1046", "Network Service Discovery"
+    ),
+    "tool_download": AttackTechnique(
+        "Command and Control", "TA0011", "T1105", "Ingress Tool Transfer"
+    ),
+    "cloud_upload": AttackTechnique(
+        "Exfiltration", "TA0010", "T1567", "Exfiltration Over Web Service"
+    ),
     # "off_hours" is intentionally absent — see module docstring.
 }
 

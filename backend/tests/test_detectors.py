@@ -10,9 +10,12 @@ from app.detectors import (
     MAX_FINDINGS,
     detect_blocked_spike,
     detect_byte_volume,
+    detect_cloud_upload,
+    detect_host_sweep,
     detect_ip_burst,
     detect_off_hours,
     detect_rare_user_agent,
+    detect_tool_download,
     run_detectors,
     severity_for,
     top_findings,
@@ -227,6 +230,105 @@ def test_byte_volume_only_flags_the_high_side():
     tiny = [entry(bytes_recv=1)]
 
     assert detect_byte_volume(normal + tiny) == []
+
+
+# --- host sweep ---------------------------------------------------------------
+
+
+def test_host_sweep_flags_scripted_multi_host_discovery():
+    sweep = [
+        entry(
+            ts=NIGHT.replace(second=index),
+            url=f"https://host-{index}.example.test/probe",
+            user_agent="masscan/1.3",
+        )
+        for index in range(5)
+    ]
+
+    findings = detect_host_sweep(sweep)
+
+    assert len(findings) == 1
+    assert findings[0].type == "host_sweep"
+    assert "5 distinct hosts" in findings[0].reason
+
+
+def test_host_sweep_ignores_normal_browser_fanout():
+    browser_fanout = [
+        entry(ts=NIGHT.replace(second=index), url=f"https://cdn-{index}.example.test/asset.js")
+        for index in range(8)
+    ]
+
+    assert detect_host_sweep(browser_fanout) == []
+
+
+def test_host_sweep_ignores_scripted_requests_to_one_host():
+    repeated = entries_at(
+        [0, 1, 2, 3, 4, 5],
+        url="https://one.example.test/probe",
+        user_agent="curl/8.4.0",
+    )
+
+    assert detect_host_sweep(repeated) == []
+
+
+# --- tool download ------------------------------------------------------------
+
+
+def test_tool_download_flags_allowed_executable_payload():
+    payload = entry(
+        url="https://downloads.example.test/agent.exe",
+        bytes_recv=4_000_000,
+        user_agent="python-requests/2.32",
+    )
+
+    findings = detect_tool_download([payload])
+
+    assert len(findings) == 1
+    assert findings[0].type == "tool_download"
+    assert findings[0].entry_id == payload.id
+
+
+def test_tool_download_ignores_blocked_or_tiny_payloads():
+    blocked = entry(
+        url="https://downloads.example.test/agent.exe",
+        bytes_recv=4_000_000,
+        action="Blocked",
+    )
+    tiny = entry(url="https://downloads.example.test/agent.exe", bytes_recv=12_000)
+
+    assert detect_tool_download([blocked, tiny]) == []
+
+
+def test_tool_download_ignores_normal_browser_download():
+    installer = entry(
+        url="https://downloads.example.test/browser.exe",
+        bytes_recv=40_000_000,
+    )
+
+    assert detect_tool_download([installer]) == []
+
+
+# --- cloud upload -------------------------------------------------------------
+
+
+def test_cloud_upload_flags_large_transfer_to_known_service():
+    upload = entry(
+        url="https://drive.google.com/upload/drive/v3/files",
+        bytes_sent=250_000_000,
+    )
+
+    findings = detect_cloud_upload([upload])
+
+    assert len(findings) == 1
+    assert findings[0].type == "cloud_upload"
+    assert findings[0].severity == "critical"
+
+
+def test_cloud_upload_ignores_small_or_non_cloud_transfers():
+    small = entry(url="https://drive.google.com/upload", bytes_sent=2_000_000)
+    private = entry(url="https://storage.corp.test/upload", bytes_sent=250_000_000)
+
+    assert detect_cloud_upload([small, private]) == []
 
 
 # --- off hours ----------------------------------------------------------------

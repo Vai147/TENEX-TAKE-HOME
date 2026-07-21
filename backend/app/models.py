@@ -10,6 +10,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -48,6 +49,8 @@ class Upload(Base):
         back_populates="upload", cascade="all, delete-orphan")
     summary: Mapped["AnalysisSummary"] = relationship(
         back_populates="upload", uselist=False, cascade="all, delete-orphan")
+    coverage_explanations: Mapped[list["CoverageExplanation"]] = relationship(
+        back_populates="upload", cascade="all, delete-orphan")
 
 
 class LogEntry(Base):
@@ -93,6 +96,12 @@ class AnomalyFinding(Base):
     llm_severity: Mapped[str | None] = mapped_column(String(16), nullable=True)
 
     upload: Mapped["Upload"] = relationship(back_populates="findings")
+    entry: Mapped[LogEntry | None] = relationship(foreign_keys=[entry_id])
+
+    @property
+    def anchor_ts(self) -> datetime | None:
+        """Timestamp of the persisted evidence row, independent of API pagination."""
+        return self.entry.ts if self.entry is not None else None
 
 
 class IocEnrichment(Base):
@@ -150,3 +159,21 @@ class AnalysisSummary(Base):
     narrative: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     upload: Mapped["Upload"] = relationship(back_populates="summary")
+
+
+class CoverageExplanation(Base):
+    """Cache of one grounded explanation per upload and ATT&CK technique."""
+
+    __tablename__ = "coverage_explanations"
+    __table_args__ = (
+        UniqueConstraint("upload_id", "technique_id", name="uq_coverage_upload_technique"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    upload_id: Mapped[int] = mapped_column(ForeignKey("uploads.id"), index=True)
+    technique_id: Mapped[str] = mapped_column(String(32))
+    explanation: Mapped[str] = mapped_column(Text)
+    source: Mapped[str] = mapped_column(String(16))  # ai | fallback
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+    upload: Mapped["Upload"] = relationship(back_populates="coverage_explanations")

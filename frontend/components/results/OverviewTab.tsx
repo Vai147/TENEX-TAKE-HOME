@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { AnchorFinding } from "@/components/results/AnchorFinding";
 import { EntriesSearch } from "@/components/results/EntriesSearch";
@@ -72,12 +71,6 @@ export function OverviewTab({
         <span className="font-mono text-[12px] text-ink-faint">
           uploaded {formatTimestamp(upload.created_at)}
         </span>
-        <Link
-          href="/upload"
-          className="ml-auto rounded-md border border-border-strong bg-surface px-3 py-[7px] text-[12px] font-medium text-ink-secondary transition-colors hover:border-ink-faint hover:bg-surface-alt"
-        >
-          New upload
-        </Link>
       </div>
 
       {loadError && (
@@ -195,14 +188,29 @@ function SeverityPopover({
   count: number;
   findings: readonly AnomalyFindingOut[];
 }) {
+  const popoverRef = useRef<HTMLSpanElement>(null);
+  const [below, setBelow] = useState(false);
   const color = SEVERITY_HEX[severity];
   const items = findings
     .filter((f) => f.severity === severity)
     .map((f) => `${detectorLabel(f.type)} — ${f.reason}`);
 
+  useLayoutEffect(() => {
+    const popover = popoverRef.current;
+    const anchor = popover?.parentElement;
+    if (!popover || !anchor) return;
+
+    const anchorTop = anchor.getBoundingClientRect().top;
+    const popoverHeight = popover.getBoundingClientRect().height;
+    setBelow(anchorTop - popoverHeight - 10 < 8);
+  }, [count, severity]);
+
   return (
     <span
-      className="pointer-events-none absolute bottom-[calc(100%+10px)] left-1/2 z-30 flex w-[250px] -translate-x-1/2 flex-col gap-1.5 rounded-lg border border-border bg-surface p-3 shadow-popover"
+      ref={popoverRef}
+      className={`pointer-events-none absolute left-1/2 z-30 flex max-h-[420px] w-[250px] -translate-x-1/2 flex-col gap-1.5 overflow-y-auto rounded-lg border border-border bg-surface p-3 shadow-popover ${
+        below ? "top-[calc(100%+10px)]" : "bottom-[calc(100%+10px)]"
+      }`}
       style={{ borderTop: `2px solid ${color}` }}
     >
       <span
@@ -212,7 +220,7 @@ function SeverityPopover({
         {severity} · {count} findings
       </span>
       {items.map((item, i) => (
-        <span key={i} className="text-[11px] leading-relaxed text-[#475467]">
+        <span key={i} className="text-[11px] leading-relaxed text-ink-secondary">
           • {item}
         </span>
       ))}

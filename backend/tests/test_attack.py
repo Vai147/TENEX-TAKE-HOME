@@ -15,6 +15,9 @@ from app.schemas import AnomalyFindingOut
         ("ip_burst", "T1110", "Credential Access"),
         ("threat_intel", "T1071", "Command and Control"),
         ("byte_volume", "T1048", "Exfiltration"),
+        ("host_sweep", "T1046", "Discovery"),
+        ("tool_download", "T1105", "Command and Control"),
+        ("cloud_upload", "T1567", "Exfiltration"),
     ],
 )
 def test_each_finding_type_maps_to_its_technique(finding_type, technique_id, tactic):

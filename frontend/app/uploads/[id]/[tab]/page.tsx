@@ -8,6 +8,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { AskClaude } from "@/components/chat/AskClaude";
 import { ConsoleHeader } from "@/components/layout/ConsoleHeader";
 import { AlertsTab } from "@/components/results/AlertsTab";
+import { CoverageTab } from "@/components/results/CoverageTab";
 import { OverviewTab } from "@/components/results/OverviewTab";
 import { SummaryTab } from "@/components/results/SummaryTab";
 import { ThreatIntelTab } from "@/components/results/ThreatIntelTab";
@@ -31,13 +32,15 @@ const DashboardTab = dynamic(
 
 const PAGE_SIZE = 100;
 
-// Overview/Dashboard run wide; Summary/Alerts are a reading column.
+// Overview/Dashboard run wide; Summary/Alerts are a reading column. Coverage is
+// a horizontally scrolling matrix, so it takes the full canvas.
 const MAX_WIDTH: Record<ResultTab, string> = {
   overview: "max-w-[1140px]",
   dashboard: "max-w-[1140px]",
   summary: "max-w-[900px]",
   alerts: "max-w-[900px]",
   "threat-intel": "max-w-[1140px]",
+  coverage: "max-w-none",
 };
 
 export default function ResultsPage() {
@@ -270,13 +273,14 @@ function ResultTabView({
           narrative={analysis?.narrative ?? detail.summary.narrative}
           llmOk={analysis?.llm_ok ?? detail.upload.llm_ok}
           findings={findings}
-          entries={detail.entries}
         />
       );
     case "alerts":
       return <AlertsTab findings={findings} />;
     case "threat-intel":
       return <ThreatIntelTab uploadId={detail.upload.id} />;
+    case "coverage":
+      return <CoverageTab uploadId={detail.upload.id} findings={findings} />;
   }
 }
 
