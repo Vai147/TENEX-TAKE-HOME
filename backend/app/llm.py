@@ -43,7 +43,10 @@ from app.detectors.base import EntryLike, Finding
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-MAX_TOKENS = 2048
+# A large upload can raise dozens of findings, each needing a 2-3 sentence
+# explanation. At 2048 the tool-call output truncated mid-`explanations`, so the
+# model returned a `narrative` with no explanations and validation rejected it.
+MAX_TOKENS = 8192
 # One retry only. If the model cannot produce valid output twice, more attempts
 # mostly buy latency on an upload a human is waiting for.
 MAX_REPAIR_ATTEMPTS = 1
