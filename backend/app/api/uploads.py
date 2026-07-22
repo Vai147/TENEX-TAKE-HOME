@@ -4,6 +4,7 @@ import json
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy import String, cast, or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
@@ -290,7 +291,22 @@ def create_coverage_explanation(
         source=source,
     )
     db.add(row)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # The results page fans out one POST per ATT&CK cell, so two requests for
+        # the same (upload, technique) can both pass the cache check above and race
+        # to insert. `uq_coverage_upload_technique` rejects the loser; roll back and
+        # return the row the winner just wrote instead of 500-ing.
+        db.rollback()
+        return (
+            db.query(CoverageExplanation)
+            .filter(
+                CoverageExplanation.upload_id == upload_id,
+                CoverageExplanation.technique_id == technique_id,
+            )
+            .one()
+        )
     db.refresh(row)
     return row
 
