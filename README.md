@@ -53,6 +53,41 @@ decides severity.
 
 ---
 
+## Detection approach
+
+**Anomaly detection is deterministic, not model-based — by design.** No LLM or ML
+model sits in the detection path. Anomalies come from a set of pure statistical
+detectors, each a `(entries) -> list[Finding]` function that scores a specific signal:
+
+- **Statistical outliers** — `byte_volume` flags upload spikes with a **Tukey fence**
+  (values beyond `Q3 + k·IQR`), so "abnormal" is defined relative to *this file's* own
+  baseline rather than a hardcoded number.
+- **Rate / burst thresholds** — `ip_burst`, `blocked_spike`, `host_sweep` score
+  request velocity and fan-out over short windows.
+- **Rarity scoring** — `rare_user_agent` weights how uncommon / signature-like a
+  user-agent is.
+- **Heuristic signals** — `tool_download`, `cloud_upload`, `off_hours` match known
+  risky patterns.
+
+Each finding carries a **confidence score** (0–1, clamped) derived from the signal's
+strength, and a **severity band** derived from that confidence.
+
+**Why deterministic over an ML/LLM detector:**
+
+1. **Auditable** — every finding shows its evidence and math; an analyst can defend it.
+2. **Reproducible** — same log in, same findings out, every run.
+3. **No hallucinated alerts** — an LLM asked to *find* threats would invent or miss
+   them; here that failure mode is structurally impossible.
+4. **Testable** — pure functions get real unit tests (`cd backend && pytest`).
+
+**Where the AI model fits:** Claude (`claude-haiku-4-5` by default; `claude-sonnet-5`
+in production) is used **only to explain** the deterministic findings — it writes the
+incident narrative and answers follow-up questions, grounded in the parsed data via a
+forced tool-call schema. It never detects, ranks, or sets severity. The deterministic
+verdict and Claude's opinion are stored as **separate fields**. See [`backend/app/llm.py`](backend/app/llm.py).
+
+---
+
 ## Tech stack
 
 | Layer     | Choice                                                            |
